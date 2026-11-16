@@ -1,4 +1,5 @@
 // Shared bits of UI, borrowed from Midori so both apps feel like siblings.
+import { Capacitor } from '@capacitor/core'
 import { X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { t } from './i18n'
@@ -176,4 +177,21 @@ export function Avatar({ name, color, size = 26 }: { name: string; color: string
       {initials(name) || '?'}
     </span>
   )
+}
+
+/** Native share sheet on phones, clipboard on desktop. */
+export async function shareLink(title: string, text: string, url: string) {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const { Share } = await import('@capacitor/share')
+      await Share.share({ title, text, url })
+    } else if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      await navigator.share({ title, text, url })
+    } else {
+      await navigator.clipboard.writeText(url)
+      toast(t('linkCopied'))
+    }
+  } catch {
+    /* share sheet dismissed */
+  }
 }

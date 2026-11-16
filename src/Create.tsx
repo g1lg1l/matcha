@@ -50,7 +50,7 @@ export function Create() {
     setBusy(true)
     try {
       const row = await createOnline(tour)
-      rememberOnline({ code: row.share_code, owner: true, t: row.data })
+      rememberOnline({ code: row.share_code, role: 'owner', t: row.data })
       sessionStorage.removeItem(DRAFT)
       go({ page: 'online', code: row.share_code }, true)
     } catch (e) {

@@ -386,3 +386,9 @@ export function rounds(matches: Match[], bracket: Bracket) {
   for (const m of matches) if (m.bracket === bracket) map.set(m.round, [...(map.get(m.round) ?? []), m])
   return [...map.entries()].sort((x, y) => x[0] - y[0])
 }
+
+/** Sets (or with null clears) one result and drops any later results it made stale. */
+export function withResult(t: Tournament, matchId: string, result: Result | null): Tournament {
+  const { [matchId]: _old, ...rest } = t.results
+  return prune({ ...t, results: result ? { ...rest, [matchId]: result } : rest })
+}

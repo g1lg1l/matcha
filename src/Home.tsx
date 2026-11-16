@@ -1,22 +1,23 @@
 import { Capacitor } from '@capacitor/core'
-import { ChevronRight, Cloud, Crown, Eye, Plus, Share } from 'lucide-react'
+import { ChevronRight, Crown, Plus, Share } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Tournament } from './engine'
 import { setLang, useLang } from './i18n'
 import { parseCode } from './online'
 import { go } from './router'
-import { useStore } from './store'
+import { useStore, type Role } from './store'
+import { RoleBadge } from './TournamentPage'
 import { field, Logo, outline, pill, Segmented, toast } from './ui'
 import { formatEmoji, summary } from './view'
 
-type Entry = { key: string; href: string; t: Tournament; online?: 'owner' | 'viewer' }
+type Entry = { key: string; href: string; t: Tournament; online?: Role }
 
 export function Home() {
   const { t, lang } = useLang()
   const { local, online } = useStore()
   const entries: Entry[] = [
     ...local.map((x) => ({ key: x.id, href: `#/t/${x.id}`, t: x })),
-    ...online.map((r) => ({ key: r.code, href: `#/s/${r.code}`, t: r.t, online: r.owner ? ('owner' as const) : ('viewer' as const) })),
+    ...online.map((r) => ({ key: r.code, href: `#/s/${r.code}`, t: r.t, online: r.role })),
   ].sort((a, b) => b.t.updatedAt.localeCompare(a.t.updatedAt))
 
   return (
@@ -84,10 +85,7 @@ function Card({ entry }: { entry: Entry }) {
             <span>{phase === 'live' ? t('inProgress') : t('playersCount', { n: entry.t.players.length })}</span>
           )}
           {entry.online && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2 py-0.5 text-xs font-semibold">
-              {entry.online === 'owner' ? <Cloud size={12} aria-hidden /> : <Eye size={12} aria-hidden />}
-              {entry.online === 'owner' ? t('onlineBadge') : t('viewing')}
-            </span>
+            <RoleBadge role={entry.online} />
           )}
         </span>
       </span>
@@ -105,9 +103,9 @@ function OpenLink() {
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          const code = parseCode(value)
-          if (!code) return toast(t('badLink'))
-          go({ page: 'online', code })
+          const link = parseCode(value)
+          if (!link) return toast(t('badLink'))
+          go({ page: 'online', ...link })
         }}
         className="mt-3 flex gap-2"
       >

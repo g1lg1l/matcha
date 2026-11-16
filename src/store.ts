@@ -3,11 +3,17 @@
 import { useSyncExternalStore } from 'react'
 import type { Tournament } from './engine'
 
+export type Role = 'owner' | 'editor' | 'viewer'
+
 export interface OnlineRef {
   code: string
-  owner: boolean
+  role: Role
   t: Tournament // last snapshot seen
 }
+
+// the first version stored `owner: boolean`
+const readOnline = () =>
+  read<(OnlineRef & { owner?: boolean })[]>(ONLINE, []).map(({ owner, ...r }) => ({ ...r, role: r.role ?? (owner ? 'owner' : 'viewer') }))
 
 interface State {
   local: Tournament[]
@@ -34,14 +40,14 @@ function write(key: string, value: unknown) {
   }
 }
 
-let state: State = { local: read(LOCAL, []), online: read(ONLINE, []) }
+let state: State = { local: read(LOCAL, []), online: readOnline() }
 const listeners = new Set<() => void>()
 const emit = () => listeners.forEach((l) => l())
 
 // another tab changed things
 addEventListener('storage', (e) => {
   if (e.key !== LOCAL && e.key !== ONLINE) return
-  state = { local: read(LOCAL, []), online: read(ONLINE, []) }
+  state = { local: read(LOCAL, []), online: readOnline() }
   emit()
 })
 

@@ -26,7 +26,8 @@
 - **Results in two taps.** Tap the winner, add scores if you like. Fix an old result and the bracket re-flows: later matches that no longer make sense reset by themselves.
 - **On your device or online.**
   - *On this device*: saved locally, works offline, no account.
-  - *Online*: saved in Supabase. Share the link and friends follow live. Only the organiser can enter results. A local tournament can be put online at any time.
+  - *Online*: saved in Supabase. Share the link and friends follow live. A local tournament can be put online at any time.
+- **Referee link.** Online, the organiser can send a second link. Whoever opens it can enter results and edit the tournament, but can't delete it. It's also how you run your tournament from your other devices. Results are saved one at a time on the server, so two referees entering different matches never overwrite each other. The organiser can make a new referee link at any time, and the old one stops working.
 - **Italian and English**, picked from the device language, switchable anytime.
 - **Playful, like Midori**: same palette steeped towards matcha, Unbounded and Figtree, sheets that slide up, emoji confetti and a wobbling trophy for the champion. Light and dark themes.
 - **Web, Android and iOS** from one codebase. On the web it's also installable as an app.
@@ -52,7 +53,9 @@ npm run build
 
 ### Online tournaments: one-time setup
 
-Open the Supabase dashboard, go to the SQL Editor, paste [`supabase/matcha.sql`](supabase/matcha.sql) and run it. It creates only `matcha_*` objects, and it's safe to run again. Anonymous sign-ins must be enabled. They already are, because Midori uses them.
+Open the Supabase dashboard, go to the SQL Editor, paste [`supabase/matcha.sql`](supabase/matcha.sql) and run it. It creates only `matcha_*` objects. It's safe to run again, including over an older version, so do the same after every schema change. Anonymous sign-ins must be enabled. They already are, because Midori uses them.
+
+Roles: the **owner** created the tournament; an **editor** opened the referee link; a **viewer** opened the share link. Row-level security enforces this, not just the UI. [`supabase/tests/run.sh`](supabase/tests/run.sh) checks it on a local Postgres with a small Supabase stand-in.
 
 ### Android and iOS
 

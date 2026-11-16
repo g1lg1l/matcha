@@ -15,7 +15,7 @@ export default function App() {
       ) : route.page === 'local' ? (
         <LocalTournament key={route.id} id={route.id} />
       ) : route.page === 'online' ? (
-        <OnlineTournament key={route.code} code={route.code} />
+        <OnlineTournament key={route.code} code={route.code} referee={route.referee} />
       ) : (
         <Home />
       )}

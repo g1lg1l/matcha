@@ -4,7 +4,8 @@
 // so local tournaments work fully offline.
 import { Capacitor } from '@capacitor/core'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
-import type { Tournament } from './engine'
+import type { Result, Tournament } from './engine'
+import type { Role } from './store'
 import { t as tr } from './i18n'
 
 export const WEB_URL = 'https://g1lg1l.github.io/matcha/'
@@ -56,18 +57,43 @@ export async function createOnline(t: Tournament): Promise<Row> {
   return data as Row
 }
 
-/** Follows the tournament behind a share code (so RLS lets us read it) and loads it. Null if the code is wrong. */
-export async function openByCode(code: string): Promise<Row | null> {
+/**
+ * Follows the tournament behind a share code (so RLS lets us read it) and loads it, with our role.
+ * A referee code makes us an editor. Null if the share code is wrong.
+ */
+export async function openByCode(code: string, referee?: string): Promise<{ row: Row; role: Role } | null> {
   const s = await sb()
   await me()
-  const { data: id, error } = await s.rpc('matcha_follow', { code })
+  const { data: follow, error } = await s.rpc('matcha_follow', referee ? { code, referee } : { code })
   if (error) {
     if (error.code === 'P0002') return null
     throw error
   }
+  const { id, role } = (follow as { id: string; role: Role }[])[0]
   const { data, error: e2 } = await s.from('matcha_tournaments').select('id, owner_id, share_code, data, updated_at').eq('id', id).maybeSingle()
   if (e2) throw e2
-  return data as Row | null
+  return data ? { row: data as Row, role } : null
+}
+
+/** One result, changed in place on the server, so referees entering different matches don't clash. */
+export async function setResultOnline(id: string, match: string, result: Result | null) {
+  const s = await sb()
+  const { error } = await s.rpc('matcha_set_result', { tid: id, match, result })
+  if (error) throw error
+}
+
+export async function refereeCode(id: string) {
+  const s = await sb()
+  const { data, error } = await s.rpc('matcha_referee_code', { tid: id })
+  if (error) throw error
+  return data as string
+}
+
+export async function resetRefereeCode(id: string) {
+  const s = await sb()
+  const { data, error } = await s.rpc('matcha_reset_referee_code', { tid: id })
+  if (error) throw error
+  return data as string
 }
 
 export async function saveOnline(t: Tournament) {
@@ -107,17 +133,17 @@ export function subscribe(id: string, onChange: (row: Row | null) => void) {
   }
 }
 
-export function shareUrl(code: string) {
+export function shareUrl(code: string, referee?: string) {
   const base = Capacitor.isNativePlatform() ? WEB_URL : `${location.origin}${location.pathname}`
-  return `${base}#/s/${code}`
+  return `${base}#/s/${code}${referee ? `/${referee}` : ''}`
 }
 
-/** Accepts a full share link or just the code. */
+/** Accepts a full share or referee link, or just the code. */
 export function parseCode(input: string) {
   const s = input.trim()
-  const fromLink = /#\/s\/([A-Za-z0-9]+)/.exec(s)?.[1]
-  if (fromLink) return fromLink
-  return /^[A-Za-z0-9]{6,40}$/.test(s) ? s : null
+  const fromLink = /#\/s\/([A-Za-z0-9]+)(?:\/([A-Za-z0-9]+))?/.exec(s)
+  if (fromLink) return { code: fromLink[1], referee: fromLink[2] }
+  return /^[A-Za-z0-9]{6,40}$/.test(s) ? { code: s } : null
 }
 
 export function errorText(error: unknown) {

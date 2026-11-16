@@ -1,55 +1,64 @@
-import { Capacitor } from '@capacitor/core'
-import { ArrowLeft, Cloud, Eye, Link2, Settings, Share2, WifiOff } from 'lucide-react'
+import { ArrowLeft, Cloud, Eye, Flag, Link2, Settings, Share2, WifiOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { BracketView, MatchList, Standings, type Ctx } from './Bracket'
-import { build, type Match, type Tournament } from './engine'
-import { useLang } from './i18n'
+import { build, withResult, type Match, type Result, type Tournament } from './engine'
+import { t as translate, useLang } from './i18n'
 import { MatchSheet } from './MatchSheet'
-import { createOnline, deleteOnline, errorText, me, openByCode, saveOnline, shareUrl, subscribe, unfollow } from './online'
+import { createOnline, deleteOnline, errorText, openByCode, saveOnline, setResultOnline, shareUrl, subscribe, unfollow } from './online'
 import { go } from './router'
 import { SettingsSheet } from './SettingsSheet'
-import { forgetOnline, getOnline, rememberOnline, removeLocal, saveLocal, updateOnlineSnapshot, useStore } from './store'
-import { btn, burst, iconBtn, Logo, Segmented, Splash, toast } from './ui'
+import { forgetOnline, getOnline, rememberOnline, removeLocal, saveLocal, updateOnlineSnapshot, useStore, type Role } from './store'
+import { btn, burst, iconBtn, Logo, Segmented, shareLink, Splash, toast } from './ui'
 import { formatEmoji } from './view'
 
 export interface Source {
   t: Tournament
   canEdit: boolean
+  /** whole-document changes: name, players, options */
   save: (t: Tournament) => void
-  online?: { code: string; owner: boolean; stale: boolean }
+  /** one result, or null to clear it */
+  setResult: (matchId: string, result: Result | null) => void
+  online?: { code: string; role: Role; stale: boolean }
 }
 
 export function LocalTournament({ id }: { id: string }) {
   const { local } = useStore()
   const t = local.find((x) => x.id === id)
   if (!t) return <Missing />
-  return <TournamentPage source={{ t, canEdit: true, save: saveLocal }} />
+  return <TournamentPage source={{ t, canEdit: true, save: saveLocal, setResult: (m, r) => saveLocal(withResult(t, m, r)) }} />
 }
 
-export function OnlineTournament({ code }: { code: string }) {
+export function OnlineTournament({ code, referee }: { code: string; referee?: string }) {
   const { t: tr } = useLang()
   const cached = getOnline(code)
   const [t, setT] = useState<Tournament | undefined>(cached?.t)
-  const [owner, setOwner] = useState(cached?.owner ?? false)
+  const [role, setRole] = useState<Role>(cached?.role ?? 'viewer')
   const [state, setState] = useState<'loading' | 'live' | 'offline' | 'missing'>('loading')
   const server = useRef<Tournament | undefined>(undefined) // last version the server confirmed
+  const firstReferee = useRef(referee) // only the first open uses it; then it leaves the URL
 
   useEffect(() => {
     let stop = () => {}
     let alive = true
-    Promise.all([openByCode(code), me()])
-      .then(([row, uid]) => {
+    const ref = firstReferee.current
+    openByCode(code, ref)
+      .then((found) => {
         if (!alive) return
-        if (!row) {
+        if (!found) {
           forgetOnline(code)
           return setState('missing')
         }
-        const isOwner = row.owner_id === uid
+        const { row, role } = found
         server.current = row.data
         setT(row.data)
-        setOwner(isOwner)
+        setRole(role)
         setState('live')
-        rememberOnline({ code, owner: isOwner, t: row.data })
+        rememberOnline({ code, role, t: row.data })
+        if (ref) {
+          // the referee code has done its job; keep it out of the address bar and history
+          go({ page: 'online', code }, true)
+          toast(role === 'viewer' ? translate('refereeExpired') : translate('nowReferee'))
+        }
         stop = subscribe(row.id, (next) => {
           if (!next) {
             forgetOnline(code)
@@ -57,7 +66,6 @@ export function OnlineTournament({ code }: { code: string }) {
           }
           server.current = next.data
           setT(next.data)
-          updateOnlineSnapshot(code, next.data)
         })
       })
       .catch(() => alive && setState('offline'))
@@ -65,20 +73,31 @@ export function OnlineTournament({ code }: { code: string }) {
       alive = false
       stop()
     }
+    // referee only matters on the first open
   }, [code])
+
+  useEffect(() => {
+    if (t) updateOnlineSnapshot(code, t)
+  }, [code, t])
 
   if (state === 'missing') return <Missing />
   if (!t) return state === 'offline' ? <Offline /> : <Splash />
 
+  const failed = (e: unknown) => {
+    toast(errorText(e))
+    setT(server.current)
+  }
   const save = (next: Tournament) => {
     const stamped = { ...next, updatedAt: new Date().toISOString() }
     setT(stamped) // optimistic
-    updateOnlineSnapshot(code, stamped)
-    saveOnline(stamped).catch((e) => {
-      toast(errorText(e))
-      setT(server.current)
-    })
+    saveOnline(stamped).catch(failed)
   }
+  // functional update, so two quick results in a row both land
+  const setResult = (matchId: string, result: Result | null) => {
+    setT((prev) => (prev ? withResult(prev, matchId, result) : prev))
+    setResultOnline(t.id, matchId, result).catch(failed)
+  }
+  const canEdit = role !== 'viewer' && state === 'live'
   return (
     <>
       {state === 'offline' && (
@@ -86,8 +105,19 @@ export function OnlineTournament({ code }: { code: string }) {
           <WifiOff size={15} aria-hidden /> {tr('offline')}
         </div>
       )}
-      <TournamentPage source={{ t, canEdit: owner && state === 'live', save, online: { code, owner, stale: state !== 'live' } }} />
+      <TournamentPage source={{ t, canEdit, save, setResult, online: { code, role, stale: state !== 'live' } }} />
     </>
+  )
+}
+
+export function RoleBadge({ role }: { role: Role }) {
+  const { t } = useLang()
+  const Icon = role === 'owner' ? Cloud : role === 'editor' ? Flag : Eye
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2 py-0.5 text-xs font-semibold">
+      <Icon size={12} aria-hidden />
+      {role === 'owner' ? t('onlineBadge') : role === 'editor' ? t('referee') : t('viewing')}
+    </span>
   )
 }
 
@@ -107,27 +137,13 @@ function TournamentPage({ source }: { source: Source }) {
 
   const share = async () => {
     if (!source.online) return setSettings(true)
-    const url = shareUrl(source.online.code)
-    const text = t('shareText', { name: tour.name })
-    try {
-      if (Capacitor.isNativePlatform()) {
-        const { Share } = await import('@capacitor/share')
-        await Share.share({ title: tour.name, text, url })
-      } else if (navigator.share && matchMedia('(pointer: coarse)').matches) {
-        await navigator.share({ title: tour.name, text, url })
-      } else {
-        await navigator.clipboard.writeText(url)
-        toast(t('linkCopied'))
-      }
-    } catch {
-      /* share sheet dismissed */
-    }
+    await shareLink(tour.name, t('shareText', { name: tour.name }), shareUrl(source.online.code))
   }
 
   async function publish() {
     try {
       const row = await createOnline(tour)
-      rememberOnline({ code: row.share_code, owner: true, t: row.data })
+      rememberOnline({ code: row.share_code, role: 'owner', t: row.data })
       removeLocal(tour.id)
       go({ page: 'online', code: row.share_code }, true)
       toast(t('published'))
@@ -140,7 +156,7 @@ function TournamentPage({ source }: { source: Source }) {
     if (!confirm(t('removeConfirm', { name: tour.name }))) return
     try {
       if (!source.online) removeLocal(tour.id)
-      else if (source.online.owner) {
+      else if (source.online.role === 'owner') {
         await deleteOnline(tour.id)
         forgetOnline(source.online.code)
       } else {
@@ -179,17 +195,12 @@ function TournamentPage({ source }: { source: Source }) {
         </span>
         <span aria-hidden>·</span>
         <span>{t('playersCount', { n: tour.players.length })}</span>
-        {source.online && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-sheet px-2 py-0.5 text-xs font-semibold">
-            {source.online.owner ? <Cloud size={12} aria-hidden /> : <Eye size={12} aria-hidden />}
-            {source.online.owner ? t('onlineBadge') : t('viewing')}
-          </span>
-        )}
+        {source.online && <RoleBadge role={source.online.role} />}
       </p>
 
       {champion && <ChampionBanner name={champion.name} id={tour.id} />}
 
-      {!source.canEdit && source.online && !source.online.owner && <p className="mt-4 rounded-xl bg-well px-3.5 py-2.5 text-sm text-mute">👀 {t('viewOnly')}</p>}
+      {source.online?.role === 'viewer' && <p className="mt-4 rounded-xl bg-well px-3.5 py-2.5 text-sm text-mute">👀 {t('viewOnly')}</p>}
 
       <div className="mt-6 mb-5">
         <Segmented
@@ -220,7 +231,7 @@ function TournamentPage({ source }: { source: Source }) {
         </button>
       )}
 
-      {openMatch && source.canEdit && <MatchSheet m={openMatch} tour={tour} b={b} onSave={source.save} onClose={() => setOpen(undefined)} />}
+      {openMatch && source.canEdit && <MatchSheet m={openMatch} tour={tour} b={b} onResult={source.setResult} onClose={() => setOpen(undefined)} />}
       {settings && <SettingsSheet source={source} onClose={() => setSettings(false)} onShare={share} onPublish={publish} onRemove={remove} />}
     </main>
   )

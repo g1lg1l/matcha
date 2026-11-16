@@ -1,11 +1,11 @@
-import { Cloud, Copy, Share2 } from 'lucide-react'
-import { useState } from 'react'
+import { Cloud, Copy, Flag, Share2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { prune, started } from './engine'
 import { setLang, useLang } from './i18n'
-import { shareUrl } from './online'
+import { errorText, refereeCode, resetRefereeCode, shareUrl } from './online'
 import { PlayersEditor } from './Players'
 import type { Source } from './TournamentPage'
-import { btn, danger, field, outline, Segmented, Sheet, toast, Toggle } from './ui'
+import { btn, danger, field, outline, Segmented, shareLink, Sheet, toast, Toggle } from './ui'
 import { EMOJIS } from './view'
 
 export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }: { source: Source; onClose: () => void; onShare: () => void; onPublish: () => Promise<void>; onRemove: () => void }) {
@@ -67,6 +67,8 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
             </button>
           </section>
         )}
+
+        {online?.role === 'owner' && !online.stale && <RefereeLink id={tour.id} code={online.code} name={tour.name} />}
 
         {!online && (
           <section>
@@ -144,7 +146,7 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
               {t('restart')}
             </button>
           )}
-          {!online || online.owner ? (
+          {!online || online.role === 'owner' ? (
             <button onClick={onRemove} className={danger}>
               {t('remove_t')}
             </button>
@@ -156,5 +158,54 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
         </section>
       </div>
     </Sheet>
+  )
+}
+
+function RefereeLink({ id, code, name }: { id: string; code: string; name: string }) {
+  const { t } = useLang()
+  const [referee, setReferee] = useState<string>()
+  useEffect(() => {
+    refereeCode(id).then(setReferee, (e) => toast(errorText(e)))
+  }, [id])
+  const url = referee ? shareUrl(code, referee) : ''
+  return (
+    <section>
+      <h3 className="mb-2.5 flex items-center gap-1.5 text-sm font-semibold text-mute">
+        <Flag size={14} aria-hidden /> {t('refereeLink')}
+      </h3>
+      <p className="mb-3 text-sm text-mute">{t('refereeHint')}</p>
+      <div className="flex gap-2">
+        <button
+          disabled={!referee}
+          onClick={() => shareLink(name, t('refereeShareText', { name }), url)}
+          className={`${outline} flex-1`}
+        >
+          <Share2 size={17} aria-hidden /> {t('shareReferee')}
+        </button>
+        <button
+          disabled={!referee}
+          aria-label={t('copyLink')}
+          onClick={() => navigator.clipboard.writeText(url).then(() => toast(t('linkCopied')))}
+          className={`${outline} px-3.5`}
+        >
+          <Copy size={17} />
+        </button>
+      </div>
+      <button
+        disabled={!referee}
+        onClick={async () => {
+          if (!confirm(t('resetRefereeConfirm'))) return
+          try {
+            setReferee(await resetRefereeCode(id))
+            toast(t('refereeWasReset'))
+          } catch (e) {
+            toast(errorText(e))
+          }
+        }}
+        className={`${danger} mt-2`}
+      >
+        {t('resetReferee')}
+      </button>
+    </section>
   )
 }

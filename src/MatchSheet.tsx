@@ -1,11 +1,11 @@
 import { Crown, Minus, Plus } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { build, prune, type Built, type Match, type Result, type Side, type Tournament } from './engine'
+import { build, withResult, type Built, type Match, type Result, type Side, type Tournament } from './engine'
 import { useLang } from './i18n'
 import { Avatar, btn, burst, closeSheet, danger, Sheet, toast } from './ui'
 import { colorOfIndex, roundLabel, sectionLabel } from './view'
 
-export function MatchSheet({ m, tour, b, onSave, onClose }: { m: Match; tour: Tournament; b: Built; onSave: (t: Tournament) => void; onClose: () => void }) {
+export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: Tournament; b: Built; onResult: (matchId: string, r: Result | null) => void; onClose: () => void }) {
   const { t } = useLang()
   const draws = m.bracket === 'RR'
   const [a, setA] = useState<number | null>(m.result?.a ?? null)
@@ -40,8 +40,8 @@ export function MatchSheet({ m, tour, b, onSave, onClose }: { m: Match; tour: To
   function save() {
     if (!w) return toast(t('needWinner'))
     const result: Result = { a, b: bs, w, pa: m.a!, pb: m.b! }
-    const next = prune({ ...tour, results: { ...tour.results, [m.id]: result } })
-    onSave(next)
+    const next = withResult(tour, m.id, result)
+    onResult(m.id, result)
     const rect = saveRef.current?.getBoundingClientRect()
     if (rect) {
       const finished = build(next).finished && !b.finished
@@ -51,8 +51,7 @@ export function MatchSheet({ m, tour, b, onSave, onClose }: { m: Match; tour: To
   }
 
   function clear() {
-    const { [m.id]: _gone, ...rest } = tour.results
-    onSave(prune({ ...tour, results: rest }))
+    onResult(m.id, null)
     closeSheet(saveRef.current)
   }
 
