@@ -1,4 +1,4 @@
-import { ArrowLeft, Cloud, Eye, Flag, Link2, Settings, Share2, WifiOff } from 'lucide-react'
+import { Emoji, Icon } from './icons'
 import { useEffect, useRef, useState } from 'react'
 import { BracketView, MatchList, Standings, type Ctx } from './Bracket'
 import { build, progress, withResult, type Match, type Result, type Tournament } from './engine'
@@ -105,7 +105,7 @@ export function OnlineTournament({ code, referee }: { code: string; referee?: st
     <>
       {state === 'offline' && (
         <div className="flex items-center justify-center gap-2 bg-c-peach px-4 py-2 text-sm font-medium">
-          <WifiOff size={15} aria-hidden /> {tr('offline')}
+          <Icon name="offline" size={15} /> {tr('offline')}
         </div>
       )}
       <TournamentPage source={{ t, canEdit, save, setResult, online: { code, role, stale: state !== 'live' } }} />
@@ -115,10 +115,9 @@ export function OnlineTournament({ code, referee }: { code: string; referee?: st
 
 export function RoleBadge({ role }: { role: Role }) {
   const { t } = useLang()
-  const Icon = role === 'owner' ? Cloud : role === 'editor' ? Flag : Eye
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2 py-0.5 text-xs font-semibold">
-      <Icon size={12} aria-hidden />
+      <Icon name={role === 'owner' ? 'cloud' : role === 'editor' ? 'flag' : 'eye'} size={13} />
       {role === 'owner' ? t('onlineBadge') : role === 'editor' ? t('referee') : t('viewing')}
     </span>
   )
@@ -188,24 +187,22 @@ function TournamentPage({ source }: { source: Source }) {
     <main className="fade-in mx-auto max-w-5xl px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))]">
       <header className="-ml-2 flex items-center gap-1">
         <a href="#/" aria-label={t('back')} className={iconBtn}>
-          <ArrowLeft size={22} />
+          <Icon name="back" size={22} />
         </a>
-        <span className="ml-1 text-[26px]" aria-hidden>
-          {tour.emoji}
-        </span>
+        <Emoji e={tour.emoji} className="bob ml-1 text-[30px]" />
         <h1 className="ml-1.5 line-clamp-2 min-w-0 flex-1 font-display text-[clamp(20px,5vw,28px)] leading-tight font-bold break-words">{tour.name}</h1>
         {source.online && (
           <button onClick={share} aria-label={t('share')} className={iconBtn}>
-            <Share2 size={20} />
+            <Icon name="share" size={20} />
           </button>
         )}
         <button onClick={() => setSettings(true)} aria-label={t('settings')} className={iconBtn}>
-          <Settings size={20} />
+          <Icon name="settings" size={20} />
         </button>
       </header>
       <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-mute">
-        <span>
-          {formatEmoji[tour.format]} {t(tour.format)}
+        <span className="inline-flex items-center gap-1.5">
+          <Emoji e={formatEmoji[tour.format]} /> {t(tour.format)}
         </span>
         <span aria-hidden>·</span>
         <span>{t('playersCount', { n: tour.players.length })}</span>
@@ -216,7 +213,7 @@ function TournamentPage({ source }: { source: Source }) {
 
       {champion && <ChampionBanner name={champion.name} id={tour.id} />}
 
-      {source.online?.role === 'viewer' && <p className="mt-4 rounded-xl bg-well px-3.5 py-2.5 text-sm text-mute">👀 {t('viewOnly')}</p>}
+      {source.online?.role === 'viewer' && <p className="mt-4 rounded-xl bg-well px-3.5 py-2.5 text-sm text-mute"><Emoji e="👀" className="mr-1" /> {t('viewOnly')}</p>}
 
       <div className="mt-6 mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
         <Segmented
@@ -229,7 +226,7 @@ function TournamentPage({ source }: { source: Source }) {
             { value: 'standings', label: t('standings') },
           ]}
         />
-        {source.canEdit && prog.done === 0 && tab !== 'standings' && <p className="text-sm text-mute">👆 {party ? t('tapTable') : t('tapToPlay')}</p>}
+        {source.canEdit && prog.done === 0 && tab !== 'standings' && <p className="text-sm text-mute"><Emoji e="👆" className="bob mr-1" /> {party ? t('tapTable') : t('tapToPlay')}</p>}
       </div>
 
       <div key={tab} className="fade-in">
@@ -258,7 +255,7 @@ function TournamentPage({ source }: { source: Source }) {
       {!source.online && (
         <button onClick={publish} className="mt-12 flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-line p-4 text-left transition hover:border-brand">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-c-sky">
-            <Link2 size={20} aria-hidden />
+            <Icon name="link" size={20} />
           </span>
           <span>
             <span className="block font-semibold">{t('publish')}</span>
@@ -308,9 +305,7 @@ function ChampionBanner({ name, id }: { name: string; id: string }) {
   }, [id, name])
   return (
     <button ref={ref} onClick={party} className="pop mt-5 flex w-full items-center gap-4 rounded-[22px] bg-c-lemon p-4 text-left active:scale-[0.99]">
-      <span className="wobble text-[44px] leading-none" aria-hidden>
-        🏆
-      </span>
+      <Emoji e="🏆" className="wobble text-[52px]" />
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-mute">{t('champion')}</span>
         <span className="block truncate font-display text-[clamp(22px,6vw,30px)] font-bold">{name}</span>
@@ -324,7 +319,7 @@ function Missing() {
   return (
     <main className="mx-auto grid min-h-dvh max-w-md content-center px-5 py-10">
       <Logo className="size-12" />
-      <h1 className="mt-8 font-display text-2xl font-bold">🫖 {t('notFound')}</h1>
+      <h1 className="mt-8 font-display text-2xl font-bold"><Emoji e="🫖" className="bob mr-2" />{t('notFound')}</h1>
       <a href="#/" className={`${btn} mt-8 justify-self-start`}>
         {t('goHome')}
       </a>
@@ -336,7 +331,7 @@ function Offline() {
   const { t } = useLang()
   return (
     <main className="mx-auto grid min-h-dvh max-w-md content-center px-5 py-10 text-center">
-      <WifiOff size={36} className="mx-auto text-mute" />
+      <Icon name="offline" size={36} className="mx-auto text-mute" />
       <p className="mt-6 font-semibold">{t('offline')}</p>
       <a href="#/" className={`${btn} mt-8 justify-self-center`}>
         {t('goHome')}

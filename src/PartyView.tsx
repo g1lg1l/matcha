@@ -1,5 +1,5 @@
 // Multiplayer games: rounds of tables, entering a table's finishing order, and the standings.
-import { Check, RotateCcw, Sparkles } from 'lucide-react'
+import { Emoji, Icon } from './icons'
 import { useMemo, useRef, useState } from 'react'
 import { build, withResult, type Built, type Tournament } from './engine'
 import { useLang } from './i18n'
@@ -7,7 +7,7 @@ import { nextRound, placePoints, placesFromScores, type Table, type TableResult 
 import { Avatar, btn, burst, closeSheet, danger, ghost, pill, Sheet, toast } from './ui'
 import { colorOfIndex, num } from './view'
 
-const medal = (place: number) => ['🥇', '🥈', '🥉'][place - 1]
+const medal = (place: number) => (place <= 3 ? <Emoji e={['🥇', '🥈', '🥉'][place - 1]} className="text-lg" label={`${place}`} /> : undefined)
 
 function usePlayer(t: Tournament) {
   return useMemo(() => {
@@ -27,7 +27,7 @@ export function RoundsView({ t, b, canEdit, onOpen, onNextRound }: { t: Tourname
     <div className="grid grid-cols-1 gap-8">
       {canSeat && (
         <button onClick={onNextRound} className={`${pill} pop h-14 w-full text-[17px]`}>
-          <Sparkles size={20} aria-hidden /> {tr('nextRound', { n: b.roundsPlayed + 1 })}
+          <Icon name="stars" size={20} /> {tr('nextRound', { n: b.roundsPlayed + 1 })}
         </button>
       )}
       {rounds.map((r) => {
@@ -37,7 +37,7 @@ export function RoundsView({ t, b, canEdit, onOpen, onNextRound }: { t: Tourname
           <section key={r}>
             <h3 className="mb-3 flex items-center gap-2 font-display text-[15px] font-semibold">
               {tr('roundOf', { n: r, total })}
-              {done && <Check size={16} className="text-brand" strokeWidth={3} aria-hidden />}
+              {done && <Icon name="check" size={16} className="text-brand" />}
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
               {tables.map((table) => (
@@ -151,7 +151,7 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
               }}
               className={`${ghost} -ml-3`}
             >
-              <RotateCcw size={15} aria-hidden /> {t('resetOrder')}
+              <Icon name="restart" size={15} /> {t('resetOrder')}
             </button>
           )}
           <button ref={saveRef} onClick={save} disabled={!complete} className={`${btn} ml-auto`}>

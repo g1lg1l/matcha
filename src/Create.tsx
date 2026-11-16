@@ -1,4 +1,4 @@
-import { ArrowLeft, Cloud, Smartphone } from 'lucide-react'
+import { Emoji, Icon } from './icons'
 import { useState, type ReactNode } from 'react'
 import { MIN_PLAYERS, type Format, type Options, type Player, type Tournament } from './engine'
 import { useLang } from './i18n'
@@ -74,7 +74,7 @@ export function Create() {
     <main className="mx-auto max-w-xl px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <header className="-ml-2 flex items-center gap-1">
         <a href="#/" aria-label={t('back')} className={iconBtn}>
-          <ArrowLeft size={22} />
+          <Icon name="back" size={22} />
         </a>
         <h1 className="font-display text-xl font-bold">{t('newTournament')}</h1>
       </header>
@@ -95,11 +95,11 @@ export function Create() {
               key={e}
               onClick={() => update({ emoji: e })}
               aria-pressed={d.emoji === e}
-              className={`grid size-11 shrink-0 place-items-center rounded-2xl text-[22px] transition active:scale-90 ${
+              className={`hoppy grid size-11 shrink-0 place-items-center rounded-2xl text-[24px] transition active:scale-90 ${
                 d.emoji === e ? 'bg-c-mint ring-2 ring-brand' : 'bg-sheet hover:bg-raised'
               }`}
             >
-              {e}
+              <Emoji e={e} className="hop" label={e} />
             </button>
           ))}
         </div>
@@ -112,11 +112,13 @@ export function Create() {
               key={f}
               onClick={() => update({ format: f })}
               aria-pressed={d.format === f}
-              className={`flex items-center gap-3.5 rounded-2xl border-2 p-3.5 text-left transition active:scale-[0.98] ${
+              className={`hoppy flex items-center gap-3.5 rounded-2xl border-2 p-3.5 text-left transition active:scale-[0.98] ${
                 d.format === f ? 'border-brand bg-c-mint' : 'border-transparent bg-sheet hover:border-line'
               }`}
             >
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-raised text-[22px]">{formatEmoji[f]}</span>
+              <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-raised text-[28px]">
+                <Emoji e={formatEmoji[f]} className="hop" />
+              </span>
               <span>
                 <span className="block font-display font-semibold">{t(f)}</span>
                 <span className="block text-sm text-mute">{t(`${f}Hint`)}</span>
@@ -143,13 +145,17 @@ export function Create() {
 
       <Section title={t('where')}>
         <div className="grid grid-cols-2 gap-2">
-          <Choice active={d.where === 'local'} onClick={() => update({ where: 'local' })} icon={<Smartphone size={20} />} title={t('local')} hint={t('localHint')} />
-          <Choice active={d.where === 'online'} onClick={() => update({ where: 'online' })} icon={<Cloud size={20} />} title={t('online')} hint={t('onlineHint')} />
+          <Choice active={d.where === 'local'} onClick={() => update({ where: 'local' })} icon={<Emoji e="📱" className="hop text-[28px]" />} title={t('local')} hint={t('localHint')} />
+          <Choice active={d.where === 'online'} onClick={() => update({ where: 'online' })} icon={<Emoji e="☁️" className="hop text-[28px]" />} title={t('online')} hint={t('onlineHint')} />
         </div>
       </Section>
 
       <button onClick={submit} disabled={busy} className={`${btn} mt-8 h-13 w-full text-[17px]`}>
-        {busy ? t('creating') : `${d.emoji} ${t('create')}`}
+        {busy ? t('creating') : (
+          <>
+            <Emoji e={d.emoji} className="text-[22px]" /> {t('create')}
+          </>
+        )}
       </button>
     </main>
   )
@@ -169,7 +175,7 @@ function Choice({ active, onClick, icon, title, hint }: { active: boolean; onCli
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`grid content-start gap-1 rounded-2xl border-2 p-3.5 text-left transition active:scale-[0.98] ${active ? 'border-brand bg-c-mint' : 'border-transparent bg-sheet hover:border-line'}`}
+      className={`hoppy grid content-start gap-1 rounded-2xl border-2 p-3.5 text-left transition active:scale-[0.98] ${active ? 'border-brand bg-c-mint' : 'border-transparent bg-sheet hover:border-line'}`}
     >
       <span className="text-brand">{icon}</span>
       <span className="font-semibold">{title}</span>

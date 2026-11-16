@@ -1,6 +1,6 @@
 // Editors for how a tournament counts points: win/draw/loss for leagues, points by finishing
 // place for multiplayer games. Used when creating a tournament and in its settings.
-import { Minus, Plus } from 'lucide-react'
+import { Emoji, Icon } from './icons'
 import { useState, type ReactNode } from 'react'
 import { POINT_PRESETS, POINTS, type Points } from './engine'
 import { useLang } from './i18n'
@@ -57,13 +57,13 @@ export function Counter({ value, min, max, onChange, label }: { value: number; m
   return (
     <div className="flex items-center gap-2" role="group" aria-label={label}>
       <button type="button" aria-label={t('less')} disabled={value <= min} onClick={() => onChange(value - 1)} className={round}>
-        <Minus size={18} />
+        <Icon name="minus" size={18} />
       </button>
       <span className="w-9 text-center font-display text-xl font-bold tabular-nums" aria-live="polite">
         {value}
       </span>
       <button type="button" aria-label={t('more')} disabled={value >= max} onClick={() => onChange(value + 1)} className={round}>
-        <Plus size={18} />
+        <Icon name="add" size={18} />
       </button>
     </div>
   )
@@ -129,7 +129,8 @@ export function PartyEditor({ value, onChange, minRounds = 1 }: { value: Partial
               aria-pressed={o.pairing === p}
               className={`rounded-2xl border-2 p-3 text-left transition active:scale-[0.98] ${o.pairing === p ? 'border-brand bg-c-mint' : 'border-transparent bg-raised'}`}
             >
-              <span className="block font-semibold">{p === 'random' ? `🔀 ${t('pairingRandom')}` : `📈 ${t('pairingStandings')}`}</span>
+              <span className="block font-semibold"><Emoji e={p === 'random' ? '🔀' : '📈'} className="mr-1.5" />
+                {p === 'random' ? t('pairingRandom') : t('pairingStandings')}</span>
               <span className="block text-sm text-mute">{p === 'random' ? t('pairingRandomHint') : t('pairingStandingsHint')}</span>
             </button>
           ))}
@@ -149,7 +150,7 @@ export function PartyEditor({ value, onChange, minRounds = 1 }: { value: Partial
         <div className="mt-3 grid grid-cols-4 gap-2">
           {places.map((v, i) => (
             <label key={i} className="grid gap-1 text-center text-xs font-semibold text-mute">
-              {['🥇', '🥈', '🥉'][i] ?? t('placeN', { n: i + 1 })}
+              {i < 3 ? <Emoji e={['🥇', '🥈', '🥉'][i]} className="mx-auto text-xl" label={t('placeN', { n: i + 1 })} /> : t('placeN', { n: i + 1 })}
               <NumberField value={v} label={t('placeN', { n: i + 1 })} onChange={(n) => set({ places: places.map((x, k) => (k === i ? n : x)) })} />
             </label>
           ))}

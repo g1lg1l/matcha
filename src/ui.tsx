@@ -1,8 +1,8 @@
 // Shared bits of UI, borrowed from Midori so both apps feel like siblings.
 import { Capacitor } from '@capacitor/core'
-import { X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { t } from './i18n'
+import { emojiClass, Icon } from './icons'
 
 export const fieldBare = 'w-full rounded-xl border border-line px-3.5 py-2.5 placeholder:text-mute/80 focus:border-brand focus:outline-none'
 export const field = `${fieldBare} bg-raised text-[15px]`
@@ -51,7 +51,7 @@ export function Sheet({ label, header, footer, onClose, children }: { label: str
       <div className="flex shrink-0 items-center gap-1 border-b border-line py-2.5 pr-2.5 pl-5">
         <div className="min-w-0 flex-1">{header}</div>
         <button onClick={close} aria-label={t('close')} className={iconBtn}>
-          <X size={20} />
+          <Icon name="close" size={20} />
         </button>
       </div>
       <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 ${footer ? 'pb-5' : 'pb-[max(1.5rem,env(safe-area-inset-bottom))]'}`}>{children}</div>
@@ -116,7 +116,10 @@ export function burst(x: number, y: number, emoji: string, count = 14) {
   host.style.top = `${y}px`
   for (let i = 0; i < count; i++) {
     const s = document.createElement('span')
-    s.textContent = i % 3 ? emoji : '✨'
+    const e = i % 3 ? emoji : '✨'
+    const c = emojiClass(e)
+    if (c) s.className = c
+    else s.textContent = e
     const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4
     const dist = 50 + Math.random() * (count > 14 ? 140 : 70)
     s.style.setProperty('--x', `${Math.cos(angle) * dist}px`)

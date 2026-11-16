@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@iconify/tailwind4";
 
 /* Midori's palette, steeped a little more towards matcha */
 :root {
@@ -186,6 +187,11 @@ dialog.sheet:not([open])::backdrop {
   pointer-events: none;
 }
 .burst span {
+  display: block;
+  width: 1em;
+  height: 1em;
+  text-align: center;
+  line-height: 1;
   position: absolute;
   font-size: 22px;
   translate: -50% -50%;
@@ -228,4 +234,32 @@ dialog.sheet:not([open])::backdrop {
 .wobble {
   display: inline-block;
   animation: wobble 2.4s ease-in-out infinite;
+}
+
+/* a little bob, for the pictures that float around empty screens */
+@keyframes bob {
+  0%, 100% { translate: 0 0; rotate: var(--tilt, 0deg); }
+  50% { translate: 0 -6px; rotate: calc(var(--tilt, 0deg) * -1); }
+}
+.bob {
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+/* pictures in pressable cards hop on hover and when picked */
+@keyframes hop {
+  0% { translate: 0 0; scale: 1; }
+  35% { translate: 0 -5px; scale: 1.12 0.92; }
+  60% { translate: 0 0; scale: 0.94 1.06; }
+  100% { translate: 0 0; scale: 1; }
+}
+.hoppy:hover .hop,
+.hoppy[aria-pressed="true"] .hop {
+  animation: hop 0.5s cubic-bezier(0.3, 0.7, 0.4, 1.4);
+}
+
+/* icons in buttons give a little twist when tapped */
+.twist:active > [class*="icon-["] {
+  rotate: -12deg;
+  scale: 1.15;
+  transition: rotate 0.1s, scale 0.1s;
 }

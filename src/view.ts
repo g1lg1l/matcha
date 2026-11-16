@@ -6,9 +6,9 @@ import { nextRound } from './party'
 const palette = ['#d1495b', '#2e86ab', '#d9702a', '#6a4c93', '#17907f', '#c4497f', '#3d6fd8', '#6f8a1f']
 export const colorOfIndex = (i: number) => palette[i % palette.length]
 
-export const EMOJIS = ['🏆', '⚽', '🏀', '🎾', '🏓', '🎮', '🎲', '♟️', '🃏', '🏎️', '🎯', '⛳', '🏐', '🥊', '🍵']
+export const EMOJIS = ['🏆', '⚽', '🏀', '🎾', '🏓', '🏸', '🏐', '🥊', '🎳', '🎱', '🎯', '⛳', '🏎️', '🎮', '🎲', '♟️', '🃏', '🧩', '🍵']
 
-export const formatEmoji: Record<Format, string> = { single: '⚡', double: '🔁', roundrobin: '🔄', party: '🎲' }
+export const formatEmoji: Record<Format, string> = { single: '⚔️', double: '💕', roundrobin: '🎡', party: '🎲' }
 
 /** 4.5 → "4,5" in Italian, "4.5" in English */
 export const num = (n: number) => n.toLocaleString(getLang(), { maximumFractionDigits: 2 })

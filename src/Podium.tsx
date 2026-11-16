@@ -1,3 +1,4 @@
+import { Emoji } from './icons'
 import type { Built, Tournament } from './engine'
 import { Avatar } from './ui'
 import { colorOfIndex } from './view'
@@ -37,7 +38,9 @@ export function Podium({ t, b }: { t: Tournament; b: Built }) {
               ))}
             </div>
             <p className={`mb-1.5 w-full truncate text-center ${s.rank === 1 ? 'font-display font-bold' : 'text-sm font-semibold'}`}>{ps.map((p) => p.name).join(' & ') || '–'}</p>
-            <div className={`grid w-full place-items-center rounded-t-2xl text-3xl ${s.h} ${s.tint}`}>{s.medal}</div>
+            <div className={`grid w-full place-items-center rounded-t-2xl ${s.rank === 1 ? 'text-[44px]' : 'text-4xl'} ${s.h} ${s.tint}`}>
+              <Emoji e={s.medal} className="bob" />
+            </div>
           </div>
         )
       })}

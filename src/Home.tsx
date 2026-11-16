@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
-import { ChevronRight, Crown, Plus, Share } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Emoji, Icon } from './icons'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { Tournament } from './engine'
 import { setLang, useLang } from './i18n'
 import { parseCode } from './online'
@@ -38,9 +38,10 @@ export function Home() {
         </div>
       </header>
       <p className="mt-5 max-w-[36ch] text-[17px] leading-relaxed text-mute">{t('tagline')}</p>
+      {!entries.length && <Toys />}
 
       <a href="#/new" className={`${pill} mt-8 h-14 w-full text-[17px]`}>
-        <Plus size={22} aria-hidden /> {entries.length ? t('newTournament') : t('firstTournament')}
+        <Icon name="add" size={22} /> {entries.length ? t('newTournament') : t('firstTournament')}
       </a>
 
       {entries.length > 0 && (
@@ -68,18 +69,20 @@ function Card({ entry }: { entry: Entry }) {
   const { t } = useLang()
   const { phase, champion, progress } = summary(entry.t)
   return (
-    <a href={entry.href} className="flex items-center gap-4 rounded-2xl border border-line bg-sheet p-3.5 transition-colors hover:border-brand">
-      <span className={`grid size-12 shrink-0 place-items-center rounded-xl text-2xl ${phaseTint[phase]}`}>{entry.t.emoji}</span>
+    <a href={entry.href} className="hoppy flex items-center gap-4 rounded-2xl border border-line bg-sheet p-3.5 transition-colors hover:border-brand">
+      <span className={`grid size-12 shrink-0 place-items-center rounded-xl text-[28px] ${phaseTint[phase]}`}>
+        <Emoji e={entry.t.emoji} className="hop" />
+      </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-display text-[16px] font-semibold">{entry.t.name}</span>
         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-mute">
-          <span>
-            {formatEmoji[entry.t.format]} {t(entry.t.format)}
+          <span className="inline-flex items-center gap-1">
+            <Emoji e={formatEmoji[entry.t.format]} /> {t(entry.t.format)}
           </span>
           <span aria-hidden>·</span>
           {phase === 'done' ? (
             <span className="inline-flex min-w-0 items-center gap-1 font-medium text-ink">
-              <Crown size={14} className="text-gold" aria-hidden /> <span className="truncate">{champion}</span>
+              <Emoji e="👑" /> <span className="truncate">{champion}</span>
             </span>
           ) : (
             <span>{phase === 'live' ? t('inProgress') : t('playersCount', { n: entry.t.players.length })}</span>
@@ -94,7 +97,7 @@ function Card({ entry }: { entry: Entry }) {
           </span>
         )}
       </span>
-      <ChevronRight size={20} className="shrink-0 text-mute" aria-hidden />
+      <Icon name="next" size={20} className="shrink-0 text-mute" />
     </a>
   )
 }
@@ -156,7 +159,7 @@ function InstallCard() {
           ) : (
             <>
               {before}
-              <Share size={14} className="inline align-[-2px]" aria-label="Share" />
+              <Icon name="iosShare" size={14} className="inline align-[-2px]" label="Share" />
               {after}
             </>
           )}
@@ -175,5 +178,23 @@ function InstallCard() {
         </button>
       )}
     </section>
+  )
+}
+
+// Something to look at before the first tournament: a few toys bobbing about.
+const toys = [
+  { e: '🏓', tilt: '-10deg', size: 'text-[38px]', delay: '0s' },
+  { e: '🎲', tilt: '8deg', size: 'text-[46px]', delay: '-0.8s' },
+  { e: '🏆', tilt: '-4deg', size: 'text-[64px]', delay: '-1.6s' },
+  { e: '♟️', tilt: '10deg', size: 'text-[44px]', delay: '-2.4s' },
+  { e: '⚽', tilt: '-8deg', size: 'text-[38px]', delay: '-0.4s' },
+]
+function Toys() {
+  return (
+    <div className="mt-8 flex items-end justify-center gap-3 rounded-[28px] bg-c-mint px-4 pt-7 pb-6" aria-hidden>
+      {toys.map((x) => (
+        <Emoji key={x.e} e={x.e} className={`bob ${x.size}`} style={{ '--tilt': x.tilt, animationDelay: x.delay } as CSSProperties} />
+      ))}
+    </div>
   )
 }

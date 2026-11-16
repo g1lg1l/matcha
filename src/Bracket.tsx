@@ -1,4 +1,5 @@
-import { Check, Crown } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Emoji, Icon } from './icons'
 import { rounds, standings, type Bracket, type Built, type Match, type Slot, type Tournament } from './engine'
 import { useLang } from './i18n'
 import { Avatar } from './ui'
@@ -18,7 +19,7 @@ const useNames = (t: Tournament) => {
 
 const tints: Record<Bracket, string> = { W: 'bg-c-mint', L: 'bg-c-peach', GF: 'bg-c-lemon', '3P': 'bg-c-lilac', RR: 'bg-c-sky' }
 
-export function MatchCard({ m, ctx, label }: { m: Match; ctx: Ctx; label?: string }) {
+export function MatchCard({ m, ctx, label }: { m: Match; ctx: Ctx; label?: ReactNode }) {
   const { t } = useLang()
   const who = useNames(ctx.t)
   const clickable = ctx.canEdit && (m.status === 'ready' || m.status === 'done')
@@ -32,7 +33,7 @@ export function MatchCard({ m, ctx, label }: { m: Match; ctx: Ctx; label?: strin
         <span className={`min-w-0 flex-1 truncate text-[15px] ${won ? 'font-bold' : s ? 'font-medium' : 'text-mute italic'}`}>
           {s ? who(s).name : s === null ? t('bye') : t('tbd')}
         </span>
-        {won && m.bracket !== 'RR' && <Check size={16} className="shrink-0 text-brand" strokeWidth={3} aria-hidden />}
+        {won && m.bracket !== 'RR' && <Icon name="check" size={16} className="shrink-0 text-brand" />}
         {score != null && <span className={`min-w-5 text-right tabular-nums ${won ? 'font-bold' : ''}`}>{score}</span>}
       </div>
     )
@@ -123,17 +124,17 @@ export function BracketView({ ctx }: { ctx: Ctx }) {
   return (
     <div className="grid grid-cols-1 gap-6">
       <section>
-        <h3 className="mb-2.5 text-sm font-semibold text-mute">🌱 {t('winners')}</h3>
+        <h3 className="mb-2.5 text-sm font-semibold text-mute"><Emoji e="🌱" className="mr-1.5" />{t('winners')}</h3>
         <Panel cols={columns(ctx, 'W')} tint={tints.W} ctx={ctx} />
       </section>
       {ctx.b.matches.some((m) => m.bracket === 'L') && (
         <section>
-          <h3 className="mb-2.5 text-sm font-semibold text-mute">🍂 {t('losers')}</h3>
+          <h3 className="mb-2.5 text-sm font-semibold text-mute"><Emoji e="🍂" className="mr-1.5" />{t('losers')}</h3>
           <Panel cols={columns(ctx, 'L')} tint={tints.L} ctx={ctx} />
         </section>
       )}
       <section>
-        <h3 className="mb-2.5 text-sm font-semibold text-mute">🏆 {t('finals')}</h3>
+        <h3 className="mb-2.5 text-sm font-semibold text-mute"><Emoji e="🏆" className="mr-1.5" />{t('finals')}</h3>
         <Panel cols={columns(ctx, 'GF')} tint={tints.GF} ctx={ctx} />
       </section>
     </div>
@@ -144,7 +145,13 @@ export function MatchList({ ctx }: { ctx: Ctx }) {
   const { t } = useLang()
   const label = (m: Match) => {
     const r = roundLabel(m, ctx.b)
-    return ctx.t.format === 'double' && (m.bracket === 'W' || m.bracket === 'L') ? `${m.bracket === 'W' ? '🌱' : '🍂'} ${r}` : r
+    return ctx.t.format === 'double' && (m.bracket === 'W' || m.bracket === 'L') ? (
+          <>
+            <Emoji e={m.bracket === 'W' ? '🌱' : '🍂'} className="mr-1" /> {r}
+          </>
+        ) : (
+          r
+        )
   }
 
   if (ctx.t.format === 'roundrobin') {
@@ -156,8 +163,8 @@ export function MatchList({ ctx }: { ctx: Ctx }) {
           <section key={round}>
             <h3 className="mb-2.5 flex items-baseline gap-2 text-sm font-semibold text-mute">
               {t('roundN', { n: round })}
-              {ms.every((m) => m.status === 'done') && <Check size={15} className="self-center text-brand" strokeWidth={3} aria-hidden />}
-              {resting(ms).length > 0 && <span className="ml-auto truncate font-normal">💤 {resting(ms).map((p) => p.name).join(', ')}</span>}
+              {ms.every((m) => m.status === 'done') && <Icon name="check" size={15} className="self-center text-brand" />}
+              {resting(ms).length > 0 && <span className="ml-auto truncate font-normal"><Emoji e="💤" className="mr-1" /> {resting(ms).map((p) => p.name).join(', ')}</span>}
             </h3>
             <div className="grid gap-2 sm:grid-cols-2">
               {ms.map((m) => (
@@ -203,7 +210,7 @@ export function MatchList({ ctx }: { ctx: Ctx }) {
 export function Standings({ ctx }: { ctx: Ctx }) {
   const { t } = useLang()
   const who = useNames(ctx.t)
-  const medal = (rank: number) => ['🥇', '🥈', '🥉'][rank - 1] ?? rank
+  const medal = (rank: number) => (rank <= 3 ? <Emoji e={['🥇', '🥈', '🥉'][rank - 1]} className="text-xl" label={`${rank}`} /> : rank)
 
   if (ctx.t.format === 'roundrobin') {
     const rows = standings(ctx.t.players, ctx.b.matches, ctx.t.options.points)
@@ -271,7 +278,7 @@ export function Standings({ ctx }: { ctx: Ctx }) {
             <span className="w-7 text-center tabular-nums">{medal(rank)}</span>
             <Avatar {...who(p.id)} />
             <span className={`flex-1 truncate ${rank <= 3 ? 'font-semibold' : 'font-medium text-mute'}`}>{p.name}</span>
-            {rank === 1 && <Crown size={18} className="text-gold" aria-hidden />}
+            {rank === 1 && <Emoji e="👑" className="wobble text-xl" />}
           </li>
         )
       })}

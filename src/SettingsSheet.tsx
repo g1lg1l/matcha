@@ -1,4 +1,4 @@
-import { Cloud, Copy, Flag, Share2 } from 'lucide-react'
+import { Emoji, Icon } from './icons'
 import { useEffect, useState } from 'react'
 import { prune, started, type Tournament } from './engine'
 import { setLang, useLang } from './i18n'
@@ -45,9 +45,9 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
                   key={e}
                   onClick={() => save({ ...tour, emoji: e })}
                   aria-pressed={tour.emoji === e}
-                  className={`grid size-10 shrink-0 place-items-center rounded-xl text-xl transition active:scale-90 ${tour.emoji === e ? 'bg-c-mint ring-2 ring-brand' : 'bg-raised'}`}
+                  className={`hoppy grid size-10 shrink-0 place-items-center rounded-xl text-[22px] transition active:scale-90 ${tour.emoji === e ? 'bg-c-mint ring-2 ring-brand' : 'bg-raised'}`}
                 >
-                  {e}
+                  <Emoji e={e} className="hop" label={e} />
                 </button>
               ))}
             </div>
@@ -63,11 +63,11 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
                 onClick={() => navigator.clipboard.writeText(shareUrl(online.code)).then(() => toast(t('linkCopied')))}
                 className={`${outline} h-9 shrink-0 bg-sheet px-3.5 text-sm`}
               >
-                <Copy size={15} aria-hidden /> {t('copyLink')}
+                <Icon name="copy" size={15} /> {t('copyLink')}
               </button>
             </div>
             <button onClick={onShare} className={`${btn} mt-3 w-full`}>
-              <Share2 size={18} aria-hidden /> {t('share')}
+              <Icon name="share" size={18} /> {t('share')}
             </button>
           </section>
         )}
@@ -87,7 +87,7 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
               }}
               className={`${btn} w-full`}
             >
-              <Cloud size={18} aria-hidden /> {publishing ? t('publishing') : t('publish')}
+              <Icon name="cloud" size={18} /> {publishing ? t('publishing') : t('publish')}
             </button>
           </section>
         )}
@@ -164,7 +164,7 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
             }}
             className={`${ghost} -mx-3 justify-self-start text-ink`}
           >
-            <Copy size={16} aria-hidden /> {t('duplicate_t')}
+            <Icon name="copy" size={16} /> {t('duplicate_t')}
           </button>
           {canEdit && locked && (
             <button
@@ -201,7 +201,7 @@ function RefereeLink({ id, code, name }: { id: string; code: string; name: strin
   return (
     <section>
       <h3 className="mb-2.5 flex items-center gap-1.5 text-sm font-semibold text-mute">
-        <Flag size={14} aria-hidden /> {t('refereeLink')}
+        <Icon name="flag" size={14} /> {t('refereeLink')}
       </h3>
       <p className="mb-3 text-sm text-mute">{t('refereeHint')}</p>
       <div className="flex gap-2">
@@ -210,7 +210,7 @@ function RefereeLink({ id, code, name }: { id: string; code: string; name: strin
           onClick={() => shareLink(name, t('refereeShareText', { name }), url)}
           className={`${outline} flex-1`}
         >
-          <Share2 size={17} aria-hidden /> {t('shareReferee')}
+          <Icon name="share" size={17} /> {t('shareReferee')}
         </button>
         <button
           disabled={!referee}
@@ -218,7 +218,7 @@ function RefereeLink({ id, code, name }: { id: string; code: string; name: strin
           onClick={() => navigator.clipboard.writeText(url).then(() => toast(t('linkCopied')))}
           className={`${outline} px-3.5`}
         >
-          <Copy size={17} />
+          <Icon name="copy" size={17} />
         </button>
       </div>
       <button

@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Plus, Shuffle, X } from 'lucide-react'
+import { Icon } from './icons'
 import { useRef, useState } from 'react'
 import { MAX_PLAYERS, shuffle, type Player } from './engine'
 import { useLang } from './i18n'
@@ -73,7 +73,7 @@ export function PlayersEditor({ players, onChange, locked = false }: { players: 
             className={`${field} min-w-0`}
           />
           <button aria-label={t('add')} disabled={!draft.trim()} className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-on-primary transition active:scale-90 disabled:opacity-40">
-            <Plus size={20} />
+            <Icon name="add" size={20} />
           </button>
         </form>
       )}
@@ -81,7 +81,7 @@ export function PlayersEditor({ players, onChange, locked = false }: { players: 
         <span className="flex-1">{locked ? t('playersLocked') : players.length > 1 ? t('seedHint') : t('addPlayerHint')}</span>
         {!locked && players.length > 2 && (
           <button type="button" onClick={() => onChange(shuffle(players))} className={`${ghost} -mr-3`}>
-            <Shuffle size={16} aria-hidden /> {t('shuffle')}
+            <Icon name="shuffle" size={16} /> {t('shuffle')}
           </button>
         )}
       </div>
@@ -105,13 +105,13 @@ export function PlayersEditor({ players, onChange, locked = false }: { players: 
               {!locked && (
                 <>
                   <button type="button" aria-label={t('moveUp')} disabled={i === 0} onClick={() => move(i, -1)} className={iconBtn}>
-                    <ArrowUp size={17} />
+                    <Icon name="up" size={17} />
                   </button>
                   <button type="button" aria-label={t('moveDown')} disabled={i === players.length - 1} onClick={() => move(i, 1)} className={iconBtn}>
-                    <ArrowDown size={17} />
+                    <Icon name="down" size={17} />
                   </button>
                   <button type="button" aria-label={`${t('remove')} ${p.name}`} onClick={() => onChange(players.filter((x) => x.id !== p.id))} className={iconBtn}>
-                    <X size={17} />
+                    <Icon name="close" size={17} />
                   </button>
                 </>
               )}

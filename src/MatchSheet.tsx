@@ -1,4 +1,4 @@
-import { Crown, Minus, Plus } from 'lucide-react'
+import { Emoji, Icon } from './icons'
 import { useRef, useState } from 'react'
 import { build, withResult, type Built, type Match, type Result, type Side, type Tournament } from './engine'
 import { useLang } from './i18n'
@@ -70,7 +70,7 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
             <span className={`flex items-center gap-1 text-sm ${picked ? 'font-semibold text-brand' : 'text-mute'}`}>
               {picked ? (
                 <>
-                  <Crown size={14} aria-hidden /> {t('winner')}
+                  <Icon name="crown" size={14} /> {t('winner')}
                 </>
               ) : (
                 ' '
@@ -118,7 +118,7 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
           aria-pressed={w === 'draw'}
           className={`mt-3 h-11 w-full rounded-2xl border-2 font-semibold transition active:scale-[0.98] ${w === 'draw' ? 'border-brand bg-c-mint' : 'border-line text-mute'}`}
         >
-          🤝 {t('draw')}
+          <Emoji e="🤝" className="mr-1.5 text-lg" />{t('draw')}
         </button>
       )}
       {downstream && <p className="mt-4 rounded-xl bg-c-lemon px-3.5 py-2.5 text-sm">{t('correctionWarn')}</p>}
@@ -132,7 +132,7 @@ function Stepper({ value, onChange, label }: { value: number | null; onChange: (
   return (
     <div className="flex shrink-0 items-center gap-1">
       <button aria-label={t('less')} disabled={!value} onClick={() => onChange(value ? value - 1 : null)} className={round}>
-        <Minus size={16} />
+        <Icon name="minus" size={16} />
       </button>
       <input
         inputMode="numeric"
@@ -147,7 +147,7 @@ function Stepper({ value, onChange, label }: { value: number | null; onChange: (
         className="h-11 w-12 rounded-xl bg-raised text-center font-display text-xl font-bold tabular-nums placeholder:text-mute/60 focus:outline-2 focus:outline-brand"
       />
       <button aria-label={t('more')} onClick={() => onChange((value ?? 0) + 1)} className={round}>
-        <Plus size={16} />
+        <Icon name="add" size={16} />
       </button>
     </div>
   )

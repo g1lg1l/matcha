@@ -41,7 +41,7 @@
 
 ## Stack
 
-React, Vite, TypeScript and Tailwind. Capacitor wraps the same build into the Android and iOS apps. Supabase (anonymous auth, Postgres with RLS, Realtime) handles online tournaments. It's the same Supabase project as Midori, and every table and function is prefixed `matcha_`.
+React, Vite, TypeScript and Tailwind. Icons come from Iconify, bundled at build time so they work offline: Solar's two-tone set for the interface and Fluent Emoji for trophies, medals and sports, so they look the same on every device. Capacitor wraps the same build into the Android and iOS apps. Supabase (anonymous auth, Postgres with RLS, Realtime) handles online tournaments. It's the same Supabase project as Midori, and every table and function is prefixed `matcha_`.
 
 The tournament logic lives in [`src/engine.ts`](src/engine.ts) and [`src/party.ts`](src/party.ts). It's pure TypeScript, tested in the matching `.test.ts` files. A tournament stores only its settings, players and results. Everything else (who plays whom, standings, champion) is rebuilt from those, which is why corrections just work.
 
