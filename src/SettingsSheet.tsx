@@ -1,0 +1,160 @@
+import { Cloud, Copy, Share2 } from 'lucide-react'
+import { useState } from 'react'
+import { prune, started } from './engine'
+import { setLang, useLang } from './i18n'
+import { shareUrl } from './online'
+import { PlayersEditor } from './Players'
+import type { Source } from './TournamentPage'
+import { btn, danger, field, outline, Segmented, Sheet, toast, Toggle } from './ui'
+import { EMOJIS } from './view'
+
+export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }: { source: Source; onClose: () => void; onShare: () => void; onPublish: () => Promise<void>; onRemove: () => void }) {
+  const { t, lang } = useLang()
+  const tour = source.t
+  const { save, canEdit, online } = source
+  const locked = started(tour)
+  const [publishing, setPublishing] = useState(false)
+  const h = 'mb-2.5 text-sm font-semibold text-mute'
+
+  return (
+    <Sheet label={t('settings')} onClose={onClose} header={<p className="font-display font-semibold">{t('settings')}</p>}>
+      <div className="grid grid-cols-1 gap-8">
+        {canEdit && (
+          <section>
+            <h3 className={h}>{t('rename')}</h3>
+            <input
+              key={tour.name}
+              defaultValue={tour.name}
+              maxLength={60}
+              aria-label={t('rename')}
+              onBlur={(e) => {
+                const name = e.target.value.trim()
+                if (name && name !== tour.name) save({ ...tour, name })
+                else e.target.value = tour.name
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+              className={`${field} font-display font-semibold`}
+            />
+            <div className="no-scrollbar -mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5">
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => save({ ...tour, emoji: e })}
+                  aria-pressed={tour.emoji === e}
+                  className={`grid size-10 shrink-0 place-items-center rounded-xl text-xl transition active:scale-90 ${tour.emoji === e ? 'bg-c-mint ring-2 ring-brand' : 'bg-raised'}`}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {online && (
+          <section>
+            <h3 className={h}>{t('share')}</h3>
+            <div className="flex items-center gap-2 rounded-xl bg-raised py-1.5 pr-1.5 pl-3.5">
+              <span className="min-w-0 flex-1 truncate font-mono text-sm">{shareUrl(online.code)}</span>
+              <button
+                onClick={() => navigator.clipboard.writeText(shareUrl(online.code)).then(() => toast(t('linkCopied')))}
+                className={`${outline} h-9 shrink-0 bg-sheet px-3.5 text-sm`}
+              >
+                <Copy size={15} aria-hidden /> {t('copyLink')}
+              </button>
+            </div>
+            <button onClick={onShare} className={`${btn} mt-3 w-full`}>
+              <Share2 size={18} aria-hidden /> {t('share')}
+            </button>
+          </section>
+        )}
+
+        {!online && (
+          <section>
+            <h3 className={h}>{t('online')}</h3>
+            <p className="mb-3 text-sm text-mute">{t('publishHint')}</p>
+            <button
+              disabled={publishing}
+              onClick={async () => {
+                setPublishing(true)
+                await onPublish()
+                setPublishing(false)
+              }}
+              className={`${btn} w-full`}
+            >
+              <Cloud size={18} aria-hidden /> {publishing ? t('publishing') : t('publish')}
+            </button>
+          </section>
+        )}
+
+        {canEdit && tour.format !== 'roundrobin' && (
+          <section className="grid gap-4">
+            <h3 className={`${h} mb-0`}>{t('options')}</h3>
+            {tour.format === 'single' && (
+              <Toggle label={t('thirdPlace')} hint={t('thirdPlaceHint')} checked={!!tour.options.thirdPlace} onChange={(v) => save(prune({ ...tour, options: { ...tour.options, thirdPlace: v } }))} />
+            )}
+            {tour.format === 'double' && (
+              <Toggle label={t('bracketReset')} hint={t('bracketResetHint')} checked={!!tour.options.bracketReset} onChange={(v) => save(prune({ ...tour, options: { ...tour.options, bracketReset: v } }))} />
+            )}
+          </section>
+        )}
+        {canEdit && tour.format === 'roundrobin' && (
+          <section className="grid gap-4">
+            <h3 className={`${h} mb-0`}>{t('options')}</h3>
+            <Toggle label={t('legs')} hint={t('legsHint')} disabled={locked} checked={tour.options.legs === 2} onChange={(v) => save({ ...tour, options: { ...tour.options, legs: v ? 2 : 1 } })} />
+          </section>
+        )}
+
+        {canEdit && (
+          <section>
+            <h3 className={h}>
+              {t('players')} · {tour.players.length}
+            </h3>
+            <PlayersEditor
+              players={tour.players}
+              locked={locked}
+              onChange={(players) => {
+                if (players.length >= 2 || locked) save({ ...tour, players })
+                else toast(t('tooFew'))
+              }}
+            />
+          </section>
+        )}
+
+        <section>
+          <h3 className={h}>{t('language')}</h3>
+          <Segmented
+            label={t('language')}
+            value={lang}
+            onChange={setLang}
+            options={[
+              { value: 'it', label: '🇮🇹 Italiano' },
+              { value: 'en', label: '🇬🇧 English' },
+            ]}
+          />
+        </section>
+
+        <section className="grid gap-1 border-t border-line pt-4">
+          {canEdit && locked && (
+            <button
+              onClick={() => {
+                if (confirm(t('restartConfirm', { name: tour.name }))) save({ ...tour, results: {} })
+              }}
+              className={danger}
+            >
+              {t('restart')}
+            </button>
+          )}
+          {!online || online.owner ? (
+            <button onClick={onRemove} className={danger}>
+              {t('remove_t')}
+            </button>
+          ) : (
+            <button onClick={onRemove} className={danger}>
+              {t('unfollow')}
+            </button>
+          )}
+        </section>
+      </div>
+    </Sheet>
+  )
+}
