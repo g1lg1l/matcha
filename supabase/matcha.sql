@@ -144,10 +144,27 @@ begin
   where id = tid;
 end $$;
 
+-- Replaces one top-level part of the document (name, players, rounds…) and leaves the rest alone,
+-- so starting a round doesn't wipe a result another referee just saved.
+create or replace function public.matcha_set_field(tid uuid, field text, value jsonb) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.matcha_can_edit(tid) then
+    raise exception 'Not allowed' using errcode = '42501';
+  end if;
+  if field not in ('name', 'emoji', 'players', 'options', 'tables', 'results') then
+    raise exception 'Bad field' using errcode = '22023';
+  end if;
+  update public.matcha_tournaments
+  set data = jsonb_set(data, array[field], coalesce(value, 'null'::jsonb))
+    || jsonb_build_object('updatedAt', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+  where id = tid;
+end $$;
+
 revoke execute on function public.matcha_follow(text, text), public.matcha_referee_code(uuid), public.matcha_reset_referee_code(uuid),
-  public.matcha_set_result(uuid, text, jsonb), public.matcha_can_edit(uuid) from public, anon;
+  public.matcha_set_result(uuid, text, jsonb), public.matcha_set_field(uuid, text, jsonb), public.matcha_can_edit(uuid) from public, anon;
 grant execute on function public.matcha_follow(text, text), public.matcha_referee_code(uuid), public.matcha_reset_referee_code(uuid),
-  public.matcha_set_result(uuid, text, jsonb), public.matcha_can_edit(uuid) to authenticated;
+  public.matcha_set_result(uuid, text, jsonb), public.matcha_set_field(uuid, text, jsonb), public.matcha_can_edit(uuid) to authenticated;
 
 alter table public.matcha_tournaments enable row level security;
 alter table public.matcha_followers enable row level security;

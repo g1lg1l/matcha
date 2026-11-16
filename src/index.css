@@ -209,6 +209,17 @@ dialog.sheet:not([open])::backdrop {
     transition: none !important;
   }
 }
+/* screens and tabs ease in */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+.fade-in {
+  animation: fade-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 /* the champion's trophy wobbles a little */
 @keyframes wobble {
   0%, 100% { rotate: -6deg; }

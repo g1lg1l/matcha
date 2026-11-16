@@ -21,7 +21,14 @@ export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)'
 
 export const Logo = ({ className = '' }: { className?: string }) => <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className={className} />
 
-export const toast = (message: string) => dispatchEvent(new CustomEvent('toast', { detail: message }))
+type ToastAction = { label: string; run: () => void }
+export const toast = (message: string, action?: ToastAction) => dispatchEvent(new CustomEvent('toast', { detail: { message, action } }))
+
+/** A light tap on phones that support it. */
+export function haptic() {
+  if (Capacitor.isNativePlatform()) import('@capacitor/haptics').then(({ Haptics, ImpactStyle }) => Haptics.impact({ style: ImpactStyle.Light })).catch(() => {})
+  else navigator.vibrate?.(12)
+}
 
 // Native <dialog>: focus trap, Esc and the top layer for free. Mounting it opens it.
 export function Sheet({ label, header, footer, onClose, children }: { label: string; header: ReactNode; footer?: ReactNode; onClose: () => void; children: ReactNode }) {
@@ -59,14 +66,17 @@ export const closeSheet = (el: Element | null) => el?.closest('dialog')?.close()
 export function Toaster() {
   const ref = useRef<HTMLDivElement>(null)
   const [message, setMessage] = useState('')
+  const [action, setAction] = useState<ToastAction>()
   useEffect(() => {
     let timer = 0
     const show = (e: Event) => {
-      setMessage((e as CustomEvent<string>).detail)
+      const { message, action } = (e as CustomEvent<{ message: string; action?: ToastAction }>).detail
+      setMessage(message)
+      setAction(action)
       ref.current?.hidePopover()
       ref.current?.showPopover()
       clearTimeout(timer)
-      timer = setTimeout(() => ref.current?.hidePopover(), 3500)
+      timer = setTimeout(() => ref.current?.hidePopover(), action ? 5000 : 3500)
     }
     addEventListener('toast', show)
     return () => removeEventListener('toast', show)
@@ -76,9 +86,22 @@ export function Toaster() {
       ref={ref}
       popover="manual"
       role="status"
-      className="toast inset-x-0 top-[max(1rem,env(safe-area-inset-top))] bottom-auto mx-auto w-fit max-w-[calc(100%-2rem)] rounded-full border-0 bg-primary px-4 py-2.5 text-sm font-medium text-on-primary shadow-lg"
+      className="toast inset-x-0 top-[max(1rem,env(safe-area-inset-top))] bottom-auto mx-auto w-fit max-w-[calc(100%-2rem)] rounded-full border-0 bg-primary py-2.5 pr-2 pl-4 text-sm font-medium text-on-primary shadow-lg"
     >
-      {message}
+      <span className="flex items-center gap-3 pr-2">
+        {message}
+        {action && (
+          <button
+            onClick={() => {
+              action.run()
+              ref.current?.hidePopover()
+            }}
+            className="-my-1 -mr-2 rounded-full bg-on-primary/15 px-3 py-1 font-semibold transition hover:bg-on-primary/25 active:scale-95"
+          >
+            {action.label}
+          </button>
+        )}
+      </span>
     </div>
   )
 }

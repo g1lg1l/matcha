@@ -1,11 +1,15 @@
 import { Cloud, Copy, Flag, Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { prune, started } from './engine'
+import { prune, started, type Tournament } from './engine'
 import { setLang, useLang } from './i18n'
 import { errorText, refereeCode, resetRefereeCode, shareUrl } from './online'
 import { PlayersEditor } from './Players'
+import { duplicate } from './Create'
+import { nextRound } from './party'
+import { go } from './router'
+import { PartyEditor, PointsEditor } from './Scoring'
 import type { Source } from './TournamentPage'
-import { btn, danger, field, outline, Segmented, shareLink, Sheet, toast, Toggle } from './ui'
+import { btn, danger, field, ghost, outline, Segmented, shareLink, Sheet, toast, Toggle } from './ui'
 import { EMOJIS } from './view'
 
 export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }: { source: Source; onClose: () => void; onShare: () => void; onPublish: () => Promise<void>; onRemove: () => void }) {
@@ -88,7 +92,7 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
           </section>
         )}
 
-        {canEdit && tour.format !== 'roundrobin' && (
+        {canEdit && (tour.format === 'single' || tour.format === 'double') && (
           <section className="grid gap-4">
             <h3 className={`${h} mb-0`}>{t('options')}</h3>
             {tour.format === 'single' && (
@@ -100,9 +104,24 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
           </section>
         )}
         {canEdit && tour.format === 'roundrobin' && (
-          <section className="grid gap-4">
+          <section className="grid grid-cols-1 gap-5">
             <h3 className={`${h} mb-0`}>{t('options')}</h3>
             <Toggle label={t('legs')} hint={t('legsHint')} disabled={locked} checked={tour.options.legs === 2} onChange={(v) => save({ ...tour, options: { ...tour.options, legs: v ? 2 : 1 } })} />
+            <PointsEditor value={tour.options.points} onChange={(points) => save({ ...tour, options: { ...tour.options, points } })} />
+          </section>
+        )}
+        {canEdit && tour.format === 'party' && (
+          <section className="grid grid-cols-1">
+            <h3 className={h}>{t('scoring')}</h3>
+            <PartyEditor
+              value={tour.options.party}
+              minRounds={tour.tables?.length ?? 1}
+              onChange={(party) => {
+                const next = { ...tour, options: { ...tour.options, party } }
+                // before anyone has played, a new table size reseats the first round
+                save(!locked && party.tableSize !== tour.options.party?.tableSize ? reseat(next) : next)
+              }}
+            />
           </section>
         )}
 
@@ -115,8 +134,10 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
               players={tour.players}
               locked={locked}
               onChange={(players) => {
-                if (players.length >= 2 || locked) save({ ...tour, players })
-                else toast(t('tooFew'))
+                if (players.length < 2 && !locked) return toast(t('tooFew'))
+                const next = { ...tour, players }
+                // new or removed players before the first result: seat the first round again
+                save(tour.format === 'party' && !locked && players.length !== tour.players.length ? reseat(next) : next)
               }}
             />
           </section>
@@ -136,6 +157,15 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
         </section>
 
         <section className="grid gap-1 border-t border-line pt-4">
+          <button
+            onClick={() => {
+              duplicate(tour)
+              go({ page: 'new' })
+            }}
+            className={`${ghost} -mx-3 justify-self-start text-ink`}
+          >
+            <Copy size={16} aria-hidden /> {t('duplicate_t')}
+          </button>
           {canEdit && locked && (
             <button
               onClick={() => {
@@ -208,4 +238,9 @@ function RefereeLink({ id, code, name }: { id: string; code: string; name: strin
       </button>
     </section>
   )
+}
+
+const reseat = (t: Tournament): Tournament => {
+  const fresh = { ...t, tables: [] }
+  return { ...fresh, results: {}, tables: [nextRound(fresh)] }
 }

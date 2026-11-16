@@ -5,6 +5,7 @@
 import { Capacitor } from '@capacitor/core'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import type { Result, Tournament } from './engine'
+import type { TableResult } from './party'
 import type { Role } from './store'
 import { t as tr } from './i18n'
 
@@ -76,7 +77,7 @@ export async function openByCode(code: string, referee?: string): Promise<{ row:
 }
 
 /** One result, changed in place on the server, so referees entering different matches don't clash. */
-export async function setResultOnline(id: string, match: string, result: Result | null) {
+export async function setResultOnline(id: string, match: string, result: Result | TableResult | null) {
   const s = await sb()
   const { error } = await s.rpc('matcha_set_result', { tid: id, match, result })
   if (error) throw error
@@ -96,10 +97,16 @@ export async function resetRefereeCode(id: string) {
   return data as string
 }
 
-export async function saveOnline(t: Tournament) {
+const FIELDS = ['name', 'emoji', 'players', 'options', 'tables', 'results'] as const
+
+/** Sends only the parts of the document that changed, each replaced on its own on the server. */
+export async function saveOnline(prev: Tournament, next: Tournament) {
   const s = await sb()
-  const { error } = await s.from('matcha_tournaments').update({ data: t }).eq('id', t.id)
-  if (error) throw error
+  for (const field of FIELDS) {
+    if (JSON.stringify(prev[field]) === JSON.stringify(next[field])) continue
+    const { error } = await s.rpc('matcha_set_field', { tid: next.id, field, value: next[field] ?? null })
+    if (error) throw error
+  }
 }
 
 export async function deleteOnline(id: string) {

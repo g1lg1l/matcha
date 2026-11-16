@@ -26,8 +26,9 @@ select 'expect viewer (bad referee code)', role from matcha_follow(:'code', 'wro
 select 'expect 1', count(*) from matcha_tournaments;
 with u as (update matcha_tournaments set data = '{"hacked":true}' returning 1) select 'expect 0 rows updated', count(*) from u;
 with u as (delete from matcha_tournaments returning 1) select 'expect 0 rows deleted', count(*) from u;
-\echo expect Not allowed, Only the owner, permission denied x3
+\echo expect Not allowed x2, Only the owner, permission denied x3
 select matcha_set_result('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'W1-0', '{"w":"a"}');
+select matcha_set_field('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'name', '"hacked"');
 select matcha_referee_code('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
 select * from matcha_referee_codes;
 insert into matcha_followers (tournament_id, role) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'editor');
@@ -44,6 +45,10 @@ with u as (update matcha_tournaments set data = data || '{"emoji":"⚽"}' return
 with u as (delete from matcha_tournaments returning 1) select 'expect 0 rows deleted', count(*) from u;
 \echo expect Bad result
 select matcha_set_result('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', repeat('x', 30), '{}');
+select matcha_set_field('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'tables', '[[["p1","p2"]]]');
+select 'expect tables set, results kept', data->'tables', data->'results' ? 'W1-0' from matcha_tournaments;
+\echo expect Bad field
+select matcha_set_field('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'id', '"x"');
 
 set request.jwt.claim.sub = :'owner';
 select 'expect new code', matcha_reset_referee_code('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa') <> :'refcode';

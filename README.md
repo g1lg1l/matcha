@@ -3,17 +3,17 @@
 <h1 align="center">Matcha</h1>
 
 <p align="center">
-  Tournaments with friends. Knockout, double elimination or round robin.<br>
+  Tournaments with friends. Knockout, double elimination, round robin<br>or multiplayer games where everyone scores by where they finish.<br>
   Make the bracket, share the link, play. In Italian and English.
 </p>
 
 <p align="center"><b><a href="https://g1lg1l.github.io/matcha/">Open Matcha</a></b> · a sibling of <a href="https://github.com/g1lg1l/midori">Midori</a> 🍵</p>
 
 <p align="center">
-  <img src="docs/screenshots/mobile-create.png" width="24%" alt="Creating a tournament: name, emoji, format, players">
-  <img src="docs/screenshots/mobile-bracket.png" width="24%" alt="Double elimination bracket with winners and losers brackets">
-  <img src="docs/screenshots/mobile-result.png" width="24%" alt="Entering a result with score steppers">
-  <img src="docs/screenshots/mobile-standings.png" width="24%" alt="Round robin league table">
+  <img src="docs/screenshots/mobile-create.png" width="24%" alt="Creating a multiplayer tournament: tables of 4, 3 rounds, points by place">
+  <img src="docs/screenshots/mobile-table.png" width="24%" alt="Entering a table's result with game scores, two players tied for 2nd share the points">
+  <img src="docs/screenshots/mobile-rounds.png" width="24%" alt="A finished round with two tables and the button to start the next round">
+  <img src="docs/screenshots/mobile-podium.png" width="24%" alt="Final standings with the podium">
 </p>
 
 ## What it does
@@ -21,15 +21,20 @@
 - **Three formats**
   - **Knockout** (single elimination), with an optional 3rd place match.
   - **Double elimination**: lose once and you drop to the losers bracket, lose twice and you're out. Grand final with an optional reset, so the losers-bracket player has to beat the winners-bracket player twice.
-  - **Round robin** (girone all'italiana): everyone plays everyone, once or home and away. 3 points for a win, 1 for a draw. Ties are broken by score difference, then points scored, then head to head.
+  - **Round robin** (girone all'italiana): everyone plays everyone, once or home and away. Points per win, draw and loss are up to you: 3·1·0 like football, 1·½·0 like chess, or anything else. Ties are broken by score difference, then points scored, then head to head.
+  - **Multiplayer games**: for board games, kart races, poker and the like. Each round seats everyone at tables of 2 to 8 players.
+    - **Points by finishing place**: pick a preset (10·6·3·1, 3·2·1·0…) or type your own. Tied players share the points of the places they cover.
+    - **Game scores (optional)**: type victory points, chips or strokes and the finishing order follows. Standings can go by place points or by total game score, with "lowest wins" for golf and the like.
+    - **Seating**: random every round, or by standings so leaders play leaders. At tables of two it avoids rematches when it can.
 - **Any number of players**, from 2 to 128. Byes go to the top seeds. The list order is the seeding (#1 and #2 only meet in the final), or you can shuffle it. Paste a list to add everyone at once.
-- **Results in two taps.** Tap the winner, add scores if you like. Fix an old result and the bracket re-flows: later matches that no longer make sense reset by themselves.
+- **Results in two taps.** Tap the winner, add scores if you like. Fix an old result and the bracket re-flows: later matches that no longer make sense reset by themselves. Every result can be undone for a few seconds, including what it reset.
 - **On your device or online.**
   - *On this device*: saved locally, works offline, no account.
   - *Online*: saved in Supabase. Share the link and friends follow live. A local tournament can be put online at any time.
 - **Referee link.** Online, the organiser can send a second link. Whoever opens it can enter results and edit the tournament, but can't delete it. It's also how you run your tournament from your other devices. Results are saved one at a time on the server, so two referees entering different matches never overwrite each other. The organiser can make a new referee link at any time, and the old one stops working.
 - **Italian and English**, picked from the device language, switchable anytime.
-- **Playful, like Midori**: same palette steeped towards matcha, Unbounded and Figtree, sheets that slide up, emoji confetti and a wobbling trophy for the champion. Light and dark themes.
+- **Playful, like Midori**: same palette steeped towards matcha, Unbounded and Figtree, sheets that slide up, emoji confetti and a wobbling trophy for the champion. Brackets are drawn with joining lines, standings end on a podium, and a progress bar shows how far along you are. Light and dark themes, with a light vibration on phones.
+- **Play again**: start a new tournament with the same players and rules in one tap.
 - **Web, Android and iOS** from one codebase. On the web it's also installable as an app.
 
 <p align="center"><img src="docs/screenshots/bracket-dark.png" alt="The double elimination bracket on desktop in dark mode, with the champion banner"></p>
@@ -38,7 +43,7 @@
 
 React, Vite, TypeScript and Tailwind. Capacitor wraps the same build into the Android and iOS apps. Supabase (anonymous auth, Postgres with RLS, Realtime) handles online tournaments. It's the same Supabase project as Midori, and every table and function is prefixed `matcha_`.
 
-The bracket logic lives in [`src/engine.ts`](src/engine.ts). It's pure TypeScript with tests in [`src/engine.test.ts`](src/engine.test.ts). A tournament stores only its settings, players and results. Everything else (who plays whom, standings, champion) is rebuilt from those, which is why corrections just work.
+The tournament logic lives in [`src/engine.ts`](src/engine.ts) and [`src/party.ts`](src/party.ts). It's pure TypeScript, tested in the matching `.test.ts` files. A tournament stores only its settings, players and results. Everything else (who plays whom, standings, champion) is rebuilt from those, which is why corrections just work.
 
 ## Run it
 

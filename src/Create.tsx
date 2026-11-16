@@ -1,9 +1,10 @@
 import { ArrowLeft, Cloud, Smartphone } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { MIN_PLAYERS, type Format, type Options, type Player } from './engine'
+import { MIN_PLAYERS, type Format, type Options, type Player, type Tournament } from './engine'
 import { useLang } from './i18n'
 import { createOnline, errorText } from './online'
 import { PlayersEditor } from './Players'
+import { PartyEditor, PointsEditor } from './Scoring'
 import { go } from './router'
 import { rememberOnline, saveLocal } from './store'
 import { btn, field, iconBtn, toast, Toggle } from './ui'
@@ -20,6 +21,16 @@ function loadDraft(): Draft {
     /* nothing saved */
   }
   return { name: '', emoji: '🏆', format: 'single', options: { thirdPlace: false, bracketReset: true, legs: 1 }, players: [], where: 'local' }
+}
+
+/** Opens the new-tournament form prefilled from another tournament: same players, same rules. */
+export function duplicate(t: Tournament) {
+  const d: Draft = { name: t.name, emoji: t.emoji, format: t.format, options: t.options, players: t.players, where: 'local' }
+  try {
+    sessionStorage.setItem(DRAFT, JSON.stringify(d))
+  } catch {
+    /* fine: the form just starts empty */
+  }
 }
 
 export function Create() {
@@ -96,7 +107,7 @@ export function Create() {
 
       <Section title={t('format')}>
         <div className="grid gap-2">
-          {(['single', 'double', 'roundrobin'] as const).map((f) => (
+          {(['single', 'double', 'roundrobin', 'party'] as const).map((f) => (
             <button
               key={f}
               onClick={() => update({ format: f })}
@@ -113,10 +124,16 @@ export function Create() {
             </button>
           ))}
         </div>
-        <div className="mt-4 grid gap-4 rounded-2xl bg-sheet p-4">
+        <div key={d.format} className="pop mt-4 grid grid-cols-1 gap-6 rounded-2xl bg-sheet p-4">
           {d.format === 'single' && <Toggle label={t('thirdPlace')} hint={t('thirdPlaceHint')} checked={!!d.options.thirdPlace} onChange={(v) => opt({ thirdPlace: v })} />}
           {d.format === 'double' && <Toggle label={t('bracketReset')} hint={t('bracketResetHint')} checked={!!d.options.bracketReset} onChange={(v) => opt({ bracketReset: v })} />}
-          {d.format === 'roundrobin' && <Toggle label={t('legs')} hint={t('legsHint')} checked={d.options.legs === 2} onChange={(v) => opt({ legs: v ? 2 : 1 })} />}
+          {d.format === 'roundrobin' && (
+            <>
+              <Toggle label={t('legs')} hint={t('legsHint')} checked={d.options.legs === 2} onChange={(v) => opt({ legs: v ? 2 : 1 })} />
+              <PointsEditor value={d.options.points} onChange={(points) => opt({ points })} />
+            </>
+          )}
+          {d.format === 'party' && <PartyEditor value={d.options.party} onChange={(party) => opt({ party })} />}
         </div>
       </Section>
 

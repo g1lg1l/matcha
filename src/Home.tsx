@@ -66,7 +66,7 @@ const phaseTint = { new: 'bg-c-sky', live: 'bg-c-peach', done: 'bg-c-lemon' }
 
 function Card({ entry }: { entry: Entry }) {
   const { t } = useLang()
-  const { phase, champion } = summary(entry.t)
+  const { phase, champion, progress } = summary(entry.t)
   return (
     <a href={entry.href} className="flex items-center gap-4 rounded-2xl border border-line bg-sheet p-3.5 transition-colors hover:border-brand">
       <span className={`grid size-12 shrink-0 place-items-center rounded-xl text-2xl ${phaseTint[phase]}`}>{entry.t.emoji}</span>
@@ -88,6 +88,11 @@ function Card({ entry }: { entry: Entry }) {
             <RoleBadge role={entry.online} />
           )}
         </span>
+        {phase === 'live' && (
+          <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-well" aria-hidden>
+            <span className="block h-full rounded-full bg-brand" style={{ width: `${Math.round((progress.done / Math.max(1, progress.total)) * 100)}%` }} />
+          </span>
+        )}
       </span>
       <ChevronRight size={20} className="shrink-0 text-mute" aria-hidden />
     </a>

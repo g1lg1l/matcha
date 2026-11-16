@@ -1,9 +1,11 @@
-// Bracket engine. Pure functions, no React, no Supabase.
+// Tournament engine. Pure functions, no React, no Supabase.
 // A tournament stores only its settings, its players in seed order and the results. Every view
 // (matches, who plays whom next, standings, the champion) is rebuilt from those by build(), so
 // correcting an old result re-flows the whole bracket by itself.
 
-export type Format = 'single' | 'double' | 'roundrobin'
+import { buildParty, type PartyOptions, type PartyRow, type Table, type TableResult } from './party'
+
+export type Format = 'single' | 'double' | 'roundrobin' | 'party'
 
 export interface Player {
   id: string
@@ -17,6 +19,16 @@ export interface Options {
   bracketReset?: boolean
   /** round robin: 2 = home and away */
   legs?: 1 | 2
+  /** round robin: points for a win, a draw and a loss */
+  points?: Points
+  /** multiplayer games */
+  party?: Partial<PartyOptions>
+}
+
+export interface Points {
+  win: number
+  draw: number
+  loss: number
 }
 
 export type Side = 'a' | 'b'
@@ -38,7 +50,9 @@ export interface Tournament {
   format: Format
   players: Player[] // in seed order
   options: Options
-  results: Record<string, Result>
+  results: Record<string, Result | TableResult>
+  /** multiplayer games: rounds → tables → player ids, seated as each round starts */
+  tables?: string[][][]
   createdAt: string
   updatedAt: string
 }
@@ -80,9 +94,16 @@ export interface Built {
   byId: Map<string, Match>
   champion: string | null
   finished: boolean
-  /** knockout only: final ranking, filled in as players are knocked out */
+  /** final ranking: knockouts fill it in as players go out, leagues from the table */
   ranks: Map<string, number>
+  /** multiplayer games */
+  tables: Table[]
+  rows: PartyRow[]
+  roundsPlayed: number
+  roundDone: boolean
 }
+
+type Input = Pick<Tournament, 'format' | 'players' | 'options' | 'results'> & Partial<Pick<Tournament, 'tables'>>
 
 export const MIN_PLAYERS = 2
 export const MAX_PLAYERS = 128
@@ -188,12 +209,32 @@ function roundRobin(players: Player[], legs: 1 | 2): Shell[] {
   )
 }
 
-const validFor = (r: Result | undefined, a: Slot, b: Slot, draws: boolean) =>
-  r && r.pa === a && r.pb === b && (draws || r.w !== 'draw') ? r : undefined
+const validFor = (raw: Result | TableResult | undefined, a: Slot, b: Slot, draws: boolean) => {
+  const r = raw && 'w' in raw ? raw : undefined
+  return r && r.pa === a && r.pb === b && (draws || r.w !== 'draw') ? r : undefined
+}
 
-export function build(t: Pick<Tournament, 'format' | 'players' | 'options' | 'results'>): Built {
+const noParty = { tables: [], rows: [], roundsPlayed: 0, roundDone: false }
+
+export function build(t: Input): Built {
   const { format, players, options, results } = t
   const ranks = new Map<string, number>()
+
+  if (format === 'party') {
+    const p = buildParty({ ...t, tables: t.tables })
+    p.rows.forEach((row, i) => ranks.set(row.player, i + 1))
+    return {
+      matches: [],
+      byId: new Map(),
+      finished: p.finished,
+      champion: p.finished ? (p.rows[0]?.player ?? null) : null,
+      ranks,
+      tables: p.tables,
+      rows: p.rows,
+      roundsPlayed: p.roundsPlayed,
+      roundDone: p.roundDone,
+    }
+  }
 
   if (format === 'roundrobin') {
     const matches: Match[] = roundRobin(players, options.legs ?? 1).map((m) => {
@@ -204,9 +245,9 @@ export function build(t: Pick<Tournament, 'format' | 'players' | 'options' | 're
       return { ...m, status: 'done', result, winner, loser }
     })
     const finished = matches.length > 0 && matches.every((m) => m.status === 'done')
-    const table = standings(players, matches)
+    const table = standings(players, matches, options.points)
     table.forEach((row, i) => ranks.set(row.player, i + 1))
-    return { matches, byId: new Map(matches.map((m) => [m.id, m])), finished, champion: finished ? (table[0]?.player ?? null) : null, ranks }
+    return { matches, byId: new Map(matches.map((m) => [m.id, m])), finished, champion: finished ? (table[0]?.player ?? null) : null, ranks, ...noParty }
   }
 
   const shells = knockout(players.length, format, options)
@@ -293,7 +334,7 @@ export function build(t: Pick<Tournament, 'format' | 'players' | 'options' | 're
   }
 
   const matches: Match[] = shells.map(({ winnerTo: _w, loserTo: _l, ...m }) => m)
-  return { matches, byId: new Map(matches.map((m) => [m.id, m])), champion, finished, ranks }
+  return { matches, byId: new Map(matches.map((m) => [m.id, m])), champion, finished, ranks, ...noParty }
 }
 
 export interface Row {
@@ -307,10 +348,11 @@ export interface Row {
   points: number
 }
 
-export const POINTS = { win: 3, draw: 1, loss: 0 }
+export const POINTS: Points = { win: 3, draw: 1, loss: 0 }
+export const POINT_PRESETS: Points[] = [POINTS, { win: 2, draw: 1, loss: 0 }, { win: 1, draw: 0.5, loss: 0 }]
 
 /** League table: points, then score difference, then scored, then head-to-head points. */
-export function standings(players: Player[], matches: Match[]): Row[] {
+export function standings(players: Player[], matches: Match[], pts: Points = POINTS): Row[] {
   const rows = new Map<string, Row>(players.map((p) => [p.id, { player: p.id, played: 0, won: 0, drawn: 0, lost: 0, for: 0, against: 0, points: 0 }]))
   for (const m of matches) {
     if (m.status !== 'done' || !m.result || !m.a || !m.b) continue
@@ -327,24 +369,24 @@ export function standings(players: Player[], matches: Match[]): Row[] {
     if (w === 'draw') {
       a.drawn++
       b.drawn++
-      a.points += POINTS.draw
-      b.points += POINTS.draw
+      a.points += pts.draw
+      b.points += pts.draw
     } else {
       const [win, lose] = w === 'a' ? [a, b] : [b, a]
       win.won++
       lose.lost++
-      win.points += POINTS.win
-      lose.points += POINTS.loss
+      win.points += pts.win
+      lose.points += pts.loss
     }
   }
   const h2h = (x: string, y: string) => {
-    let pts = 0
+    let sum = 0
     for (const m of matches) {
       if (m.status !== 'done' || !m.result) continue
-      if (m.a === x && m.b === y) pts += m.result.w === 'a' ? 3 : m.result.w === 'draw' ? 1 : 0
-      if (m.b === x && m.a === y) pts += m.result.w === 'b' ? 3 : m.result.w === 'draw' ? 1 : 0
+      if (m.a === x && m.b === y) sum += m.result.w === 'a' ? pts.win : m.result.w === 'draw' ? pts.draw : pts.loss
+      if (m.b === x && m.a === y) sum += m.result.w === 'b' ? pts.win : m.result.w === 'draw' ? pts.draw : pts.loss
     }
-    return pts
+    return sum
   }
   const seed = new Map(players.map((p, i) => [p.id, i]))
   return [...rows.values()].sort(
@@ -361,13 +403,16 @@ export function standings(players: Player[], matches: Match[]): Row[] {
 export const playable = (b: Built) => b.matches.filter((m) => m.status === 'ready')
 
 /** True once any result counts; after that the player list is locked (renames are still fine). */
-export const started = (t: Pick<Tournament, 'format' | 'players' | 'options' | 'results'>) =>
-  build(t).matches.some((m) => m.status === 'done')
+export const started = (t: Input) => {
+  const b = build(t)
+  return b.matches.some((m) => m.status === 'done') || b.tables.some((x) => x.status === 'done')
+}
 
 /** Drops results that no longer match their match, so the stored document stays tidy. */
 export function prune(t: Tournament): Tournament {
   const built = build(t)
-  const results = Object.fromEntries(Object.entries(t.results).filter(([id]) => built.byId.get(id)?.result))
+  const kept = new Set([...built.matches.filter((m) => m.result).map((m) => m.id), ...built.tables.filter((x) => x.result).map((x) => x.id)])
+  const results = Object.fromEntries(Object.entries(t.results).filter(([id]) => kept.has(id)))
   return { ...t, results }
 }
 
@@ -380,6 +425,16 @@ export function shuffle<T>(list: T[]) {
   return a
 }
 
+/** Progress for the UI: results in, out of the matches that will be played (byes and unneeded resets excluded). */
+export function progress(b: Built, t: Input) {
+  if (t.format === 'party') {
+    const planned = Math.max(b.roundsPlayed, (t.options.party?.rounds ?? 3)) * Math.max(1, b.tables.filter((x) => x.round === 1).length)
+    return { done: b.tables.filter((x) => x.status === 'done').length, total: Math.max(planned, b.tables.length) }
+  }
+  const real = b.matches.filter((m) => m.status !== 'bye' && !m.hidden)
+  return { done: real.filter((m) => m.status === 'done').length, total: real.length }
+}
+
 /** Columns for the bracket view: [label key, round number, matches]. */
 export function rounds(matches: Match[], bracket: Bracket) {
   const map = new Map<number, Match[]>()
@@ -388,7 +443,7 @@ export function rounds(matches: Match[], bracket: Bracket) {
 }
 
 /** Sets (or with null clears) one result and drops any later results it made stale. */
-export function withResult(t: Tournament, matchId: string, result: Result | null): Tournament {
+export function withResult(t: Tournament, matchId: string, result: Result | TableResult | null): Tournament {
   const { [matchId]: _old, ...rest } = t.results
   return prune({ ...t, results: result ? { ...rest, [matchId]: result } : rest })
 }

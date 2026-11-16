@@ -1,9 +1,8 @@
 import { Check, Crown } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { rounds, standings, type Bracket, type Built, type Match, type Slot, type Tournament } from './engine'
 import { useLang } from './i18n'
 import { Avatar } from './ui'
-import { colorOfIndex, roundLabel } from './view'
+import { colorOfIndex, num, roundLabel } from './view'
 
 export interface Ctx {
   t: Tournament
@@ -60,68 +59,82 @@ export function MatchCard({ m, ctx, label }: { m: Match; ctx: Ctx; label?: strin
   )
 }
 
-function Column({ title, children, tint }: { title: string; children: ReactNode; tint: string }) {
+// Bracket columns sit in one tinted panel and are joined by lines: each match has a stub out to the
+// right, pairs feeding the same next match get a vertical joiner, and the next match a stub in.
+// Every slot in a column has the same height and columns stretch to the same height, so centres line up.
+// (spelled out in full so Tailwind sees every class)
+const stubOut = 'after:pointer-events-none after:absolute after:top-1/2 after:left-full after:w-4 after:-translate-y-px after:border-t-2 after:border-ink/20'
+const stubIn = 'before:pointer-events-none before:absolute before:top-1/2 before:right-full before:w-4 before:-translate-y-px before:border-t-2 before:border-ink/20'
+const joiner = 'before:pointer-events-none before:absolute before:top-1/4 before:bottom-1/4 before:left-[calc(100%+1rem-1px)] before:-translate-y-px before:border-l-2 before:border-ink/20'
+
+interface Col {
+  title: string
+  matches: Match[]
+  /** no lines into or out of this column (the 3rd place match) */
+  loose?: boolean
+}
+
+function Panel({ cols, tint, ctx }: { cols: Col[]; tint: string; ctx: Ctx }) {
   return (
-    <div className={`flex w-[min(15rem,78vw)] shrink-0 snap-start flex-col rounded-[22px] p-2.5 ${tint}`}>
-      <h4 className="px-1.5 pt-1 pb-2.5 font-display text-[13px] font-semibold">{title}</h4>
-      <div className="flex flex-1 flex-col justify-around gap-2.5">{children}</div>
+    <div className="no-scrollbar -mx-5 overflow-x-auto px-5 pb-2">
+      <div className={`inline-flex min-w-full rounded-[24px] p-3 sm:p-4 ${tint}`}>
+        {cols.map((col, i) => {
+          const next = cols[i + 1]
+          const linksOut = !!next && !next.loose && !col.loose
+          const linksIn = i > 0 && !col.loose && !cols[i - 1].loose
+          const paired = linksOut && next.matches.length * 2 === col.matches.length
+          const slot = (m: Match) => (
+            <div key={m.id} className={`relative flex flex-1 flex-col justify-center py-1.5 ${linksOut ? stubOut : ''} ${linksIn ? stubIn : ''}`}>
+              <MatchCard m={m} ctx={ctx} />
+            </div>
+          )
+          const groups = paired ? Array.from({ length: col.matches.length / 2 }, (_, k) => col.matches.slice(k * 2, k * 2 + 2)) : null
+          return (
+            <div key={col.title + i} className={`flex w-[min(13.5rem,70vw)] shrink-0 flex-col ${next ? (col.loose || next.loose ? 'mr-6' : 'mr-8') : ''}`}>
+              <h4 className="truncate px-1 pb-2 font-display text-[13px] font-semibold">{col.title}</h4>
+              <div className="flex flex-1 flex-col">
+                {groups
+                  ? groups.map((g, k) => (
+                      <div key={k} className={`relative flex flex-1 flex-col ${joiner}`}>
+                        {g.map(slot)}
+                      </div>
+                    ))
+                  : col.matches.map(slot)}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
-function Row({ children }: { children: ReactNode }) {
-  return <div className="no-scrollbar -mx-5 flex snap-x scroll-px-5 items-stretch gap-3 overflow-x-auto px-5 pb-2">{children}</div>
-}
-
-function BracketRow({ bracket, ctx }: { bracket: Bracket; ctx: Ctx }) {
-  const cols = rounds(ctx.b.matches, bracket)
-  return (
-    <Row>
-      {cols.map(([round, ms]) => (
-        <Column key={round} title={roundLabel(ms[0], ctx.b)} tint={tints[bracket]}>
-          {ms.map((m) => (
-            <MatchCard key={m.id} m={m} ctx={ctx} />
-          ))}
-        </Column>
-      ))}
-      {/* the 3rd place match sits next to the final */}
-      {bracket === 'W' &&
-        ctx.b.matches
-          .filter((m) => m.bracket === '3P')
-          .map((m) => (
-            <Column key={m.id} title={roundLabel(m, ctx.b)} tint={tints['3P']}>
-              <MatchCard m={m} ctx={ctx} />
-            </Column>
-          ))}
-    </Row>
-  )
+function columns(ctx: Ctx, bracket: Bracket): Col[] {
+  return rounds(ctx.b.matches, bracket)
+    .map(([, ms]) => ms.filter((m) => !m.hidden))
+    .filter((ms) => ms.length)
+    .map((ms) => ({ title: roundLabel(ms[0], ctx.b), matches: ms }))
 }
 
 export function BracketView({ ctx }: { ctx: Ctx }) {
   const { t } = useLang()
-  if (ctx.t.format !== 'double') return <BracketRow bracket="W" ctx={ctx} />
-  const finals = ctx.b.matches.filter((m) => m.bracket === 'GF' && !m.hidden)
+  const third = ctx.b.matches.filter((m) => m.bracket === '3P').map((m) => ({ title: roundLabel(m, ctx.b), matches: [m], loose: true }))
+  if (ctx.t.format !== 'double') return <Panel cols={[...columns(ctx, 'W'), ...third]} tint={tints.W} ctx={ctx} />
   return (
     <div className="grid grid-cols-1 gap-6">
       <section>
         <h3 className="mb-2.5 text-sm font-semibold text-mute">🌱 {t('winners')}</h3>
-        <BracketRow bracket="W" ctx={ctx} />
+        <Panel cols={columns(ctx, 'W')} tint={tints.W} ctx={ctx} />
       </section>
       {ctx.b.matches.some((m) => m.bracket === 'L') && (
         <section>
           <h3 className="mb-2.5 text-sm font-semibold text-mute">🍂 {t('losers')}</h3>
-          <BracketRow bracket="L" ctx={ctx} />
+          <Panel cols={columns(ctx, 'L')} tint={tints.L} ctx={ctx} />
         </section>
       )}
       <section>
         <h3 className="mb-2.5 text-sm font-semibold text-mute">🏆 {t('finals')}</h3>
-        <Row>
-          {finals.map((m) => (
-            <Column key={m.id} title={roundLabel(m, ctx.b)} tint={tints.GF}>
-              <MatchCard m={m} ctx={ctx} />
-            </Column>
-          ))}
-        </Row>
+        <Panel cols={columns(ctx, 'GF')} tint={tints.GF} ctx={ctx} />
       </section>
     </div>
   )
@@ -193,7 +206,7 @@ export function Standings({ ctx }: { ctx: Ctx }) {
   const medal = (rank: number) => ['🥇', '🥈', '🥉'][rank - 1] ?? rank
 
   if (ctx.t.format === 'roundrobin') {
-    const rows = standings(ctx.t.players, ctx.b.matches)
+    const rows = standings(ctx.t.players, ctx.b.matches, ctx.t.options.points)
     const th = 'px-1.5 py-2 text-center font-semibold'
     return (
       <div className="-mx-1 overflow-x-auto">
@@ -228,7 +241,7 @@ export function Standings({ ctx }: { ctx: Ctx }) {
                   <td className="px-1.5 text-center">{r.drawn}</td>
                   <td className="px-1.5 text-center">{r.lost}</td>
                   <td className="px-1.5 text-center text-mute">{diff > 0 ? `+${diff}` : diff}</td>
-                  <td className="px-1.5 text-center font-bold">{r.points}</td>
+                  <td className="px-1.5 text-center font-bold">{num(r.points)}</td>
                 </tr>
               )
             })}
