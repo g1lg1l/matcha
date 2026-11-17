@@ -1,11 +1,11 @@
 // Renders public/favicon.svg into every icon and splash the web, Android and iOS builds need.
 // Run after changing the logo (a global Playwright is fine):
-//   NODE_PATH=$(npm root -g) node scripts/icons.mjs
+//   NODE_PATH=$(npm root -g) node scripts/icons.mjs   (playwright or playwright-core)
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 
-const { chromium } = createRequire(import.meta.url)('playwright')
+const { chromium } = (() => { const req = createRequire(import.meta.url); try { return req('playwright') } catch { return req('playwright-core') } })()
 
 const svg = readFileSync(new URL('../public/favicon.svg', import.meta.url), 'utf8')
 const BG = '#000000'
@@ -44,7 +44,8 @@ const splashes = [...(existsSync(android) ? walk(android) : []), ...(existsSync(
   /splash[^/]*\.png$/.test(f),
 )
 
-const browser = await chromium.launch()
+// CHROME=/path/to/chrome uses an installed browser instead of Playwright's own
+const browser = await chromium.launch({ executablePath: process.env.CHROME })
 const page = await browser.newPage()
 for (const file of splashes) {
   const png = readFileSync(file)

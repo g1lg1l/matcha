@@ -256,7 +256,9 @@ dialog.sheet:not([open])::backdrop {
   transition: rotate 0.1s, scale 0.1s;
 }
 
-/* Pixelify's "fi" ligature reads as "A" */
+/* Pixelify at one weight: its bold closes the "C" into an "O", and its "fi" ligature reads as "A" */
 .font-display {
+  font-weight: 400 !important;
+  font-synthesis: none;
   font-variant-ligatures: none;
 }

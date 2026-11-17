@@ -4,9 +4,9 @@ const config: CapacitorConfig = {
   appId: 'io.github.g1lg1l.matcha',
   appName: 'Matcha',
   webDir: 'dist',
-  backgroundColor: '#eef2e5',
-  android: { backgroundColor: '#eef2e5' },
-  ios: { backgroundColor: '#eef2e5', contentInset: 'never' },
+  backgroundColor: '#000000',
+  android: { backgroundColor: '#000000' },
+  ios: { backgroundColor: '#000000', contentInset: 'never' },
 }
 
 export default config
