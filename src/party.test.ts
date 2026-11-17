@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { build, POINT_PRESETS, standings, withResult, type Tournament } from './engine'
-import { nextRound, placePoints, placesFromScores, splitSizes, tableId, type PartyOptions, type TableResult } from './party'
+import { BIG_PLACES, nextRound, placePoints, placesFromScores, splitSizes, tableId, type PartyOptions, type TableResult } from './party'
 
 const players = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `p${i + 1}`, name: `P${i + 1}` }))
 
@@ -118,6 +118,60 @@ describe('multiplayer games', () => {
     expect(build(t).tables[0].status).toBe('done')
     t = { ...t, players: [...t.players, { id: 'p5', name: 'P5' }], tables: [[['p1', 'p2', 'p3', 'p5']]] }
     expect(build(t).tables[0].status).toBe('ready')
+  })
+})
+
+describe('BIG rulebook options', () => {
+  const big = (n: number, tableSize = 4): Tournament => party(n, { tableSize, rounds: 3, pairing: 'standings', bigPoints: true, tiebreak: 'big' })
+  const row = (t: Tournament, id: string) => build(t).rows.find((r) => r.player === id)!
+  const order = (t: Tournament) => build(t).rows.map((r) => r.player)
+
+  it('scores by place and by how many sit at the table', () => {
+    // 7 players at tables of 4: one table of 4, one of 3
+    let t = seat(big(7))
+    expect(t.tables![0].map((x) => x.length)).toEqual([4, 3])
+    t = finish(t, 1)
+    const [four, three] = t.tables![0]
+    expect(four.map((id) => row(t, id).points)).toEqual(BIG_PLACES[4])
+    expect(three.map((id) => row(t, id).points)).toEqual([1000, 507, 251])
+  })
+
+  it('splits the points of a shared place', () => {
+    let t = seat(big(4))
+    const ids = t.tables![0][0]
+    t = withResult(t, tableId(1, 0), { ids, place: { [ids[0]]: 1, [ids[1]]: 1, [ids[2]]: 3, [ids[3]]: 4 }, score: {} })
+    expect(row(t, ids[0]).points).toBe((1000 + 611) / 2)
+  })
+
+  it('breaks round 1 ties by share of the table score, counting a ghost at a short table', () => {
+    let t = seat(big(7))
+    const [four, three] = t.tables![0]
+    // both winners score 40 of 100, but the table of 3 adds a ghost worth 90% of its average (30)
+    const scores = [40, 30, 20, 10]
+    const result = (ids: string[], sc: number[]): TableResult => ({
+      ids,
+      place: Object.fromEntries(ids.map((id, i) => [id, i + 1])),
+      score: Object.fromEntries(ids.map((id, i) => [id, sc[i]])),
+    })
+    t = withResult(t, tableId(1, 0), result(four, scores))
+    t = withResult(t, tableId(1, 1), result(three, [40, 35, 25]))
+    expect(order(t).slice(0, 2)).toEqual([four[0], three[0]]) // 40/100 beats 40/130
+    // without the ghost the short table's winner would be level; a bigger share puts them ahead
+    t = withResult(t, tableId(1, 1), result(three, [60, 10, 7]))
+    expect(order(t).slice(0, 2)).toEqual([three[0], four[0]]) // 60/100.1 beats 40/100
+  })
+
+  it('seats the next round down the standings, then breaks ties by the higher table', () => {
+    let t = finish(seat(big(8)), 1, undefined, (id) => Number(id.slice(1)))
+    t = seat(t)
+    const [top, bottom] = t.tables![1]
+    expect(top).toEqual(order(t).slice(0, 4))
+    // round 2: at each table the round 1 loser wins, so a top-table and a bottom-table player are level on points
+    t = finish(t, 2, (ids) => [...ids].reverse())
+    const pts = (id: string) => row(t, id).points
+    const level = top.find((a) => bottom.some((b) => pts(a) === pts(b)))!
+    const other = bottom.find((b) => pts(b) === pts(level))!
+    expect(order(t).indexOf(level)).toBeLessThan(order(t).indexOf(other))
   })
 })
 

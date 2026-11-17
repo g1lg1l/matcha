@@ -14,15 +14,29 @@ export interface PartyOptions {
   rankBy: 'points' | 'score'
   /** in-game score: lower is better (golf, Hearts…) */
   lowWins: boolean
+  /** BIG rulebook points: 1000 for 1st, the rest by how many sit at the table (overrides places) */
+  bigPoints: boolean
+  /** players level in the standings: most wins and best average place, or the BIG rulebook */
+  tiebreak: 'default' | 'big'
 }
 
-export const PARTY_DEFAULTS: PartyOptions = { tableSize: 4, rounds: 3, pairing: 'random', places: [10, 6, 3, 1], rankBy: 'points', lowWins: false }
+export const PARTY_DEFAULTS: PartyOptions = { tableSize: 4, rounds: 3, pairing: 'random', places: [10, 6, 3, 1], rankBy: 'points', lowWins: false, bigPoints: false, tiebreak: 'default' }
 export const PLACE_PRESETS = [
   [3, 2, 1, 0],
   [10, 6, 3, 1],
   [5, 3, 2, 1],
   [25, 18, 15, 12, 10, 8, 6, 4],
 ]
+
+/** BIG (Board Italian Gamers) rulebook, section 4: points by place for tables of 2 to 7 players. */
+export const BIG_PLACES: Record<number, number[]> = {
+  2: [1000, 336],
+  3: [1000, 507, 251],
+  4: [1000, 611, 403, 200],
+  5: [1000, 682, 507, 336, 167],
+  6: [1000, 730, 581, 433, 287, 143],
+  7: [1000, 781, 640, 507, 378, 251, 125],
+}
 
 export interface TableResult {
   /** finishing place per player, 1-based; equal places are a tie */
@@ -56,6 +70,8 @@ export interface PartyRow {
 
 export const tableId = (round: number, index: number) => `T${round}-${index}`
 export const partyOptions = (t: Pick<Tournament, 'options'>): PartyOptions => ({ ...PARTY_DEFAULTS, ...t.options.party })
+/** The points list for a table of n players. */
+export const placesFor = (o: Pick<PartyOptions, 'places' | 'bigPoints'>, n: number) => (o.bigPoints ? BIG_PLACES[Math.min(7, Math.max(2, n))] : o.places)
 
 export const isTableResult = (r: unknown): r is TableResult => !!r && typeof r === 'object' && 'place' in r
 
@@ -117,7 +133,7 @@ export function buildParty(t: Pick<Tournament, 'players' | 'options' | 'results'
         players: players.filter((p) => known.has(p)),
         status: result ? 'done' : 'ready',
         result,
-        points: result ? placePoints(result.place, opts.places) : {},
+        points: result ? placePoints(result.place, placesFor(opts, players.length)) : {},
       } satisfies Table
     }),
   )
@@ -126,6 +142,39 @@ export function buildParty(t: Pick<Tournament, 'players' | 'options' | 'results'
   const roundDone = tables.length > 0 && tables.filter((x) => x.round === roundsPlayed).every((x) => x.status === 'done')
   const finished = roundsPlayed >= opts.rounds && roundDone
   return { tables, rows, finished, roundsPlayed, roundDone, opts }
+}
+
+/**
+ * BIG tie-break (rulebook 4.2) between players level on points: whoever sat at the higher table
+ * in the last round, then finished better there, then the same for the round before, and so on.
+ * Round 1 tables are random, so that round is decided by "pbg": the share of the table's total
+ * game score. The rulebook breaks a pbg tie at random; here the seed order does, so it is stable.
+ */
+function bigTieBreak(tables: Table[]) {
+  const seat = new Map<string, [table: number, place: number]>()
+  const pbg = new Map<string, number>()
+  const full = Math.max(0, ...tables.filter((x) => x.round === 1).map((x) => x.players.length))
+  let last = 0
+  for (const x of tables) {
+    if (!x.result) continue
+    last = Math.max(last, x.round)
+    for (const id of x.players) seat.set(`${x.round}|${id}`, [x.index, x.result.place[id]])
+    if (x.round !== 1) continue
+    let sum = 0
+    for (const id of x.players) sum += x.result.score[id] ?? 0
+    // each empty seat at a short table is a ghost worth 90% of the table's average
+    sum += (full - x.players.length) * 0.9 * (sum / x.players.length)
+    for (const id of x.players) pbg.set(id, sum > 0 ? (x.result.score[id] ?? 0) / sum : 0)
+  }
+  return (x: string, y: string) => {
+    for (let r = last; r >= 2; r--) {
+      const a = seat.get(`${r}|${x}`)
+      const b = seat.get(`${r}|${y}`)
+      // mid-round: only rounds both have finished can compare them
+      if (a && b && (a[0] !== b[0] || a[1] !== b[1])) return a[0] - b[0] || a[1] - b[1]
+    }
+    return (pbg.get(y) ?? 0) - (pbg.get(x) ?? 0)
+  }
 }
 
 export function partyStandings(players: Player[], tables: Table[], opts: PartyOptions): PartyRow[] {
@@ -153,10 +202,12 @@ export function partyStandings(players: Player[], tables: Table[], opts: PartyOp
   const byScore = (x: PartyRow, y: PartyRow) => sign * (x.score - y.score)
   const byPoints = (x: PartyRow, y: PartyRow) => y.points - x.points
   const seed = new Map(players.map((p, i) => [p.id, i]))
+  const tie = opts.tiebreak === 'big' ? bigTieBreak(tables) : null
   return [...rows.values()]
     .map(({ places, ...row }) => ({ ...row, points: Math.round(row.points * 100) / 100, avgPlace: row.played ? places / row.played : 0 }))
     .sort(
       (x, y) =>
+        (tie && ((opts.rankBy === 'score' ? byScore(x, y) : byPoints(x, y)) || tie(x.player, y.player) || seed.get(x.player)! - seed.get(y.player)!)) ||
         (opts.rankBy === 'score' ? byScore(x, y) || byPoints(x, y) : byPoints(x, y) || byScore(x, y)) ||
         y.wins - x.wins ||
         (x.avgPlace || 99) - (y.avgPlace || 99) ||
@@ -173,7 +224,10 @@ export function nextRound(t: Pick<Tournament, 'players' | 'options' | 'results' 
   const ids = t.players.map((p) => p.id)
   const shuffled = shuffleWith(ids, rand)
   let order: string[]
-  if (opts.pairing === 'standings' && (t.tables?.length ?? 0) > 0) {
+  const bySeat = opts.pairing === 'standings' && (t.tables?.length ?? 0) > 0
+  // BIG tie-breaks: tables straight down the standings, tie-breaks included
+  if (bySeat && opts.tiebreak === 'big') order = rows.map((r) => r.player)
+  else if (bySeat) {
     // keep the standings order, but break exact ties randomly
     const tiebreak = new Map(shuffled.map((id, i) => [id, i]))
     const key = new Map(rows.map((r) => [r.player, opts.rankBy === 'score' ? [r.score * (opts.lowWins ? 1 : -1), -r.points] : [-r.points, r.score * (opts.lowWins ? 1 : -1)]]))

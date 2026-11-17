@@ -1,6 +1,11 @@
-import { Emoji, Icon } from './icons'
+import ElectricBorder from './bits/ElectricBorder'
+import FuzzyText from './bits/FuzzyText'
+import PixelSnow from './bits/PixelSnow'
+import ShinyText from './bits/ShinyText'
+import { Emoji, Icon, type IconName } from './icons'
 import { useEffect, useRef, useState } from 'react'
 import { BracketView, MatchList, Standings, type Ctx } from './Bracket'
+import { duplicate } from './Create'
 import { build, progress, withResult, type Match, type Result, type Tournament } from './engine'
 import { t as translate, useLang } from './i18n'
 import { MatchSheet } from './MatchSheet'
@@ -11,7 +16,7 @@ import { createOnline, deleteOnline, errorText, openByCode, saveOnline, setResul
 import { go } from './router'
 import { SettingsSheet } from './SettingsSheet'
 import { forgetOnline, getOnline, rememberOnline, removeLocal, saveLocal, updateOnlineSnapshot, useStore, type Role } from './store'
-import { btn, burst, haptic, iconBtn, Logo, Segmented, shareLink, Splash, toast } from './ui'
+import { btn, burst, iconBtn, outline, Scramble, Segmented, shareLink, Splash, toast } from './ui'
 import { formatEmoji } from './view'
 
 export interface Source {
@@ -124,6 +129,12 @@ export function RoleBadge({ role }: { role: Role }) {
 }
 
 type Tab = 'bracket' | 'matches' | 'standings'
+const tabLabel = (icon: IconName, text: string) => (
+  <>
+    {/* on the narrowest phones three labels with icons don't fit: the words stay */}
+    <Icon name={icon} size={16} className="max-[359px]:hidden" /> {text}
+  </>
+)
 
 function TournamentPage({ source }: { source: Source }) {
   const { t } = useLang()
@@ -144,7 +155,6 @@ function TournamentPage({ source }: { source: Source }) {
   const record = (id: string, r: Result | TableResult | null) => {
     const before = tour
     source.setResult(id, r)
-    haptic()
     toast(r ? t('resultSaved') : t('deleted'), { label: t('undo'), run: () => source.save(before) })
   }
 
@@ -166,7 +176,6 @@ function TournamentPage({ source }: { source: Source }) {
   }
 
   async function remove() {
-    if (!confirm(t('removeConfirm', { name: tour.name }))) return
     try {
       if (!source.online) removeLocal(tour.id)
       else if (source.online.role === 'owner') {
@@ -184,7 +193,7 @@ function TournamentPage({ source }: { source: Source }) {
   }
 
   return (
-    <main className="fade-in mx-auto max-w-5xl px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))]">
+    <main className="fade-in mx-auto max-w-5xl px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)_+_0.5rem))] pb-[max(3rem,env(safe-area-inset-bottom))]">
       <header className="-ml-2 flex items-center gap-1">
         <a href="#/" aria-label={t('back')} className={iconBtn}>
           <Icon name="back" size={22} />
@@ -196,22 +205,39 @@ function TournamentPage({ source }: { source: Source }) {
             <Icon name="share" size={20} />
           </button>
         )}
-        <button onClick={() => setSettings(true)} aria-label={t('settings')} className={iconBtn}>
+        <button onClick={() => setSettings(true)} aria-label={t('tournamentSettings')} className={`${iconBtn} twist`}>
           <Icon name="settings" size={20} />
         </button>
       </header>
-      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-mute">
-        <span className="inline-flex items-center gap-1.5">
-          <Emoji e={formatEmoji[tour.format]} /> {t(tour.format)}
+      <p className="dots mt-1.5 text-sm text-mute">
+        <span>
+          <span className="inline-flex items-center gap-1.5">
+            <Emoji e={formatEmoji[tour.format]} /> {t(tour.format)}
+          </span>
+          <span>{t('playersCount', { n: tour.players.length })}</span>
+          {source.online && (
+            <span>
+              <RoleBadge role={source.online.role} />
+            </span>
+          )}
         </span>
-        <span aria-hidden>·</span>
-        <span>{t('playersCount', { n: tour.players.length })}</span>
-        {source.online && <RoleBadge role={source.online.role} />}
       </p>
 
       {prog.total > 0 && !b.finished && <ProgressBar done={prog.done} total={prog.total} />}
 
       {champion && <ChampionBanner name={champion.name} id={tour.id} />}
+      {/* it's over: the next thing anyone wants is to go again, same players and rules */}
+      {b.finished && (
+        <button
+          onClick={() => {
+            duplicate(tour)
+            go({ page: 'new' })
+          }}
+          className={`${outline} twist mt-3 w-full`}
+        >
+          <Icon name="restart" size={18} /> {t('rematch')}
+        </button>
+      )}
 
       {source.online?.role === 'viewer' && <p className="mt-4 rounded-xl bg-well px-3.5 py-2.5 text-sm text-mute"><Emoji e="👀" className="mr-1" /> {t('viewOnly')}</p>}
 
@@ -221,12 +247,12 @@ function TournamentPage({ source }: { source: Source }) {
           value={tab}
           onChange={setTab}
           options={[
-            ...(knockout ? [{ value: 'bracket' as const, label: t('bracket') }] : []),
-            { value: 'matches', label: party ? t('rounds') : t('matches') },
-            { value: 'standings', label: t('standings') },
+            ...(knockout ? [{ value: 'bracket' as const, label: tabLabel('bracket', t('bracket')) }] : []),
+            { value: 'matches', label: tabLabel('list', party ? t('rounds') : t('matches')) },
+            { value: 'standings', label: tabLabel('trophy', t('standings')) },
           ]}
         />
-        {source.canEdit && prog.done === 0 && tab !== 'standings' && <p className="text-sm text-mute"><Emoji e="👆" className="bob mr-1" /> {party ? t('tapTable') : t('tapToPlay')}</p>}
+        {source.canEdit && prog.done === 0 && tab !== 'standings' && <p className="text-sm"><Emoji e="👆" className="bob mr-1" /> <ShinyText text={party ? t('tapTable') : t('tapToPlay')} color="#b4b4b4" shineColor="#ffffff" speed={3} /></p>}
       </div>
 
       <div key={tab} className="fade-in">
@@ -238,10 +264,7 @@ function TournamentPage({ source }: { source: Source }) {
             b={b}
             canEdit={source.canEdit}
             onOpen={(x) => setOpen(x.id)}
-            onNextRound={() => {
-              source.save(withNextRound(tour))
-              haptic()
-            }}
+            onNextRound={() => source.save(withNextRound(tour))}
           />
         )}
         {tab === 'standings' && (
@@ -253,7 +276,7 @@ function TournamentPage({ source }: { source: Source }) {
       </div>
 
       {!source.online && (
-        <button onClick={publish} className="mt-12 flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-line p-4 text-left transition hover:border-brand">
+        <button onClick={publish} className="mt-12 flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-line p-4 text-left transition hover:border-brand active:scale-[0.98]">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-c-sky">
             <Icon name="link" size={20} />
           </span>
@@ -304,13 +327,20 @@ function ChampionBanner({ name, id }: { name: string; id: string }) {
     return () => clearTimeout(timer)
   }, [id, name])
   return (
-    <button ref={ref} onClick={party} className="pop mt-5 flex w-full items-center gap-4 rounded-[10px] bg-c-lemon p-4 text-left active:scale-[0.99]">
-      <Emoji e="🏆" className="wobble text-[52px]" />
-      <span className="min-w-0">
-        <span className="block text-sm font-semibold text-mute">{t('champion')}</span>
-        <span className="block truncate font-display text-[clamp(22px,6vw,30px)] font-bold">{name}</span>
-      </span>
-    </button>
+    <ElectricBorder color="#ffc83d" borderRadius={10} thickness={2} speed={0.7} chaos={0.4} interactive={false} className="pop mt-5">
+      <button ref={ref} onClick={party} className="relative flex w-full items-center gap-4 overflow-hidden rounded-[10px] bg-c-lemon p-4 text-left active:scale-[0.99]">
+        <span aria-hidden className="absolute inset-0">
+          <PixelSnow color="#ffc83d" variant="square" density={0.22} speed={0.6} flakeSize={0.5} pixelSize={3} opacity={0.55} />
+        </span>
+        <Emoji e="🏆" className="wobble relative text-[52px]" />
+        <span className="relative min-w-0">
+          <span className="block text-sm font-semibold">
+            <ShinyText text={t('champion')} color="#b4b4b4" shineColor="#ffc83d" speed={2.5} />
+          </span>
+          <span className="block truncate font-display text-[clamp(22px,6vw,30px)] font-bold"><Scramble text={name} /></span>
+        </span>
+      </button>
+    </ElectricBorder>
   )
 }
 
@@ -318,10 +348,14 @@ function Missing() {
   const { t } = useLang()
   return (
     <main className="mx-auto grid min-h-dvh max-w-md content-center px-5 py-10">
-      <Logo className="size-12" />
-      <h1 className="mt-8 font-display text-2xl font-bold"><Emoji e="🫖" className="bob mr-2" />{t('notFound')}</h1>
+      <div className="text-brand">
+        <FuzzyText fontSize={84} fontWeight={400} fontFamily="Pixelify Sans" color="#c6f24e" baseIntensity={0.16} enableHover={false}>
+          404
+        </FuzzyText>
+      </div>
+      <h1 className="mt-6 font-display text-2xl font-bold"><Emoji e="🫖" className="bob mr-2" />{t('notFound')}</h1>
       <a href="#/" className={`${btn} mt-8 justify-self-start`}>
-        {t('goHome')}
+        <Icon name="home" size={18} /> {t('goHome')}
       </a>
     </main>
   )
@@ -334,7 +368,7 @@ function Offline() {
       <Icon name="offline" size={36} className="mx-auto text-mute" />
       <p className="mt-6 font-semibold">{t('offline')}</p>
       <a href="#/" className={`${btn} mt-8 justify-self-center`}>
-        {t('goHome')}
+        <Icon name="home" size={18} /> {t('goHome')}
       </a>
     </main>
   )

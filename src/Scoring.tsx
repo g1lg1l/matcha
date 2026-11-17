@@ -1,15 +1,45 @@
 // Editors for how a tournament counts points: win/draw/loss for leagues, points by finishing
 // place for multiplayer games. Used when creating a tournament and in its settings.
 import { Emoji, Icon } from './icons'
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import Odometer from './bits/Counter'
+import JellyRadio from './bits/JellyRadio'
+import ScrubField from './bits/ScrubField'
 import { POINT_PRESETS, POINTS, type Points } from './engine'
 import { useLang } from './i18n'
-import { PARTY_DEFAULTS, PLACE_PRESETS, type PartyOptions } from './party'
+import { BIG_PLACES, PARTY_DEFAULTS, PLACE_PRESETS, placesFor, type PartyOptions } from './party'
 import { Segmented, Toggle } from './ui'
 import { num } from './view'
 
-const chip = (on: boolean) =>
-  `h-9 shrink-0 pixel px-3.5 text-sm font-semibold tabular-nums transition active:scale-95 ${on ? 'bg-primary text-on-primary' : 'bg-raised text-mute hover:text-ink'}`
+/** Preset chips: the picked one swells and shoves its neighbours (React Bits JellyRadio). No pick means a custom set. */
+function Presets({ items, picked, onPick, label }: { items: ReactNode[]; picked: number; onPick: (i: number) => void; label: string }) {
+  const { t } = useLang()
+  return (
+    <>
+    <p className="mt-4 mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-mute">
+      <Icon name="sliders" size={14} /> {t('presets')}
+    </p>
+    {/* one row that scrolls sideways, with room above and below for the swell */}
+    <div className="no-scrollbar -mx-4 -my-2 overflow-x-auto px-4 py-2">
+    <JellyRadio
+      ariaLabel={label}
+      items={items.map((x, i) => ({ value: `${i}`, label: x }))}
+      value={picked < 0 ? '' : `${picked}`}
+      onChange={(_, i) => onPick(i)}
+      size="md"
+      radius={6}
+      swell={0.06}
+      barge={3}
+      chipColor="#1d1d1d"
+      activeColor="#c6f24e"
+      textColor="#b4b4b4"
+      activeTextColor="#0d1300"
+      className="font-semibold tabular-nums"
+    />
+    </div>
+    </>
+  )
+}
 
 const same = (a: number[], b: number[]) => a.length === b.length && a.every((x, i) => x === b[i])
 
@@ -22,32 +52,12 @@ export function Label({ children, hint }: { children: ReactNode; hint?: string }
   )
 }
 
-/** A small number field that accepts "0,5" as well as "0.5". */
+/** A number you drag sideways to change, or tap to type (React Bits ScrubField). */
 function NumberField({ value, onChange, label, step = 1 }: { value: number; onChange: (n: number) => void; label: string; step?: number }) {
-  const [text, setText] = useState(num(value))
-  const [focused, setFocused] = useState(false)
   return (
-    <input
-      inputMode="decimal"
-      aria-label={label}
-      value={focused ? text : num(value)}
-      onFocus={(e) => {
-        setText(num(value))
-        setFocused(true)
-        requestAnimationFrame(() => e.target.select())
-      }}
-      onBlur={() => setFocused(false)}
-      onChange={(e) => {
-        setText(e.target.value)
-        const n = Number(e.target.value.replace(',', '.'))
-        if (e.target.value.trim() !== '' && Number.isFinite(n)) onChange(Math.round(n * 100) / 100)
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowUp') onChange(value + step)
-        if (e.key === 'ArrowDown') onChange(value - step)
-      }}
-      className="h-11 w-full min-w-0 rounded-xl bg-raised text-center font-display text-lg font-bold tabular-nums focus:outline-2 focus:outline-brand"
-    />
+    <span role="group" aria-label={label} className="block">
+      <ScrubField label="" suffix="" showFill={false} value={value} step={step} min={-999} max={999} onChange={onChange} showDelta={false} showDirty={false} size="lg" accent="#c6f24e" chipColor="#1d1d1d" className="w-full! justify-center px-1! font-display" />
+    </span>
   )
 }
 
@@ -59,8 +69,8 @@ export function Counter({ value, min, max, onChange, label }: { value: number; m
       <button type="button" aria-label={t('less')} disabled={value <= min} onClick={() => onChange(value - 1)} className={round}>
         <Icon name="minus" size={18} />
       </button>
-      <span className="w-9 text-center font-display text-xl font-bold tabular-nums" aria-live="polite">
-        {value}
+      <span className="grid w-9 place-items-center font-display text-xl" aria-live="polite">
+        <Odometer value={value} fontSize="1em" duration={0.45} />
       </span>
       <button type="button" aria-label={t('more')} disabled={value >= max} onClick={() => onChange(value + 1)} className={round}>
         <Icon name="add" size={18} />
@@ -76,16 +86,7 @@ export function PointsEditor({ value = POINTS, onChange }: { value?: Points; onC
   return (
     <div>
       <Label>{t('pointsSystem')}</Label>
-      <div className="flex flex-wrap gap-1.5">
-        {POINT_PRESETS.map((p, i) => (
-          <button key={i} type="button" onClick={() => onChange(p)} aria-pressed={preset === i} className={chip(preset === i)}>
-            {[p.win, p.draw, p.loss].map(num).join(' · ')}
-            {names[i] && <span className="ml-1.5 font-medium opacity-75">{names[i]}</span>}
-          </button>
-        ))}
-        <span className={`${chip(preset < 0)} pointer-events-none inline-flex items-center`}>{t('custom')}</span>
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {(['win', 'draw', 'loss'] as const).map((k) => (
           <label key={k} className="grid gap-1 text-center text-xs font-semibold text-mute">
             {t(k === 'win' ? 'pointsWin' : k === 'draw' ? 'pointsDraw' : 'pointsLoss')}
@@ -93,6 +94,12 @@ export function PointsEditor({ value = POINTS, onChange }: { value?: Points; onC
           </label>
         ))}
       </div>
+      <Presets
+        label={t('pointsSystem')}
+        picked={preset}
+        onPick={(i) => onChange(POINT_PRESETS[i])}
+        items={POINT_PRESETS.map((p, i) => `${[p.win, p.draw, p.loss].map(num).join(' · ')}${names[i] ? ` ${names[i]}` : ''}`)}
+      />
     </div>
   )
 }
@@ -102,11 +109,12 @@ export function PartyEditor({ value, onChange, minRounds = 1 }: { value: Partial
   const o = { ...PARTY_DEFAULTS, ...value }
   const set = (patch: Partial<PartyOptions>) => onChange({ ...o, ...patch })
   // the points list always covers every seat at the biggest table
-  const places = Array.from({ length: o.tableSize + 1 }, (_, i) => o.places[i] ?? 0).slice(0, Math.max(o.tableSize, 2))
+  const shown = placesFor(o, o.tableSize)
+  const places = Array.from({ length: o.tableSize + 1 }, (_, i) => shown[i] ?? 0).slice(0, Math.max(o.tableSize, 2))
   const preset = PLACE_PRESETS.findIndex((p) => same(p.slice(0, places.length).concat(Array(Math.max(0, places.length - p.length)).fill(0)), places))
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>{t('tableSize')}</Label>
@@ -138,37 +146,50 @@ export function PartyEditor({ value, onChange, minRounds = 1 }: { value: Partial
       </div>
 
       <div>
-        <Label>{t('placePoints')}</Label>
-        <div className="flex flex-wrap gap-1.5">
-          {PLACE_PRESETS.map((p, i) => (
-            <button key={i} type="button" onClick={() => set({ places: Array.from({ length: places.length }, (_, k) => p[k] ?? 0) })} aria-pressed={preset === i} className={chip(preset === i)}>
-              {p.slice(0, places.length).map(num).join(' · ')}
-            </button>
-          ))}
-          <span className={`${chip(preset < 0)} pointer-events-none inline-flex items-center`}>{t('custom')}</span>
-        </div>
-        <div className="mt-3 grid grid-cols-4 gap-2">
+        <Label hint={t('placePointsHint')}>{t('placePoints')}</Label>
+        <div className="grid grid-cols-4 gap-2">
           {places.map((v, i) => (
             <label key={i} className="grid gap-1 text-center text-xs font-semibold text-mute">
               {/* one fixed-height slot, so the medal rows and the "4°" rows line up */}
               <span className="grid h-6 place-items-center">
                 {i < 3 ? <Emoji e={['🥇', '🥈', '🥉'][i]} className="text-xl" label={t('placeN', { n: i + 1 })} /> : t('placeN', { n: i + 1 })}
               </span>
-              <NumberField value={v} label={t('placeN', { n: i + 1 })} onChange={(n) => set({ places: places.map((x, k) => (k === i ? n : x)) })} />
+              <NumberField value={v} label={t('placeN', { n: i + 1 })} onChange={(n) => set({ bigPoints: false, places: places.map((x, k) => (k === i ? n : x)) })} />
             </label>
           ))}
         </div>
+        <Presets
+          label={t('placePoints')}
+          picked={o.bigPoints ? PLACE_PRESETS.length : preset}
+          onPick={(i) => set(i < PLACE_PRESETS.length ? { bigPoints: false, places: Array.from({ length: places.length }, (_, k) => PLACE_PRESETS[i][k] ?? 0) } : { bigPoints: true })}
+          items={[...PLACE_PRESETS.map((p) => p.slice(0, places.length).map(num).join(' · ')), `BIG ${BIG_PLACES[Math.min(7, places.length)].map(num).join(' · ')}`]}
+        />
+        {o.bigPoints && <p className="mt-2 text-sm text-mute">{t('bigPointsHint')}</p>}
       </div>
 
       <div>
         <Label>{t('rankBy')}</Label>
         <Segmented
+          fit
           label={t('rankBy')}
           value={o.rankBy}
           onChange={(v) => set({ rankBy: v })}
           options={[
             { value: 'points', label: t('rankByPoints') },
             { value: 'score', label: t('rankByScore') },
+          ]}
+        />
+      </div>
+      <div>
+        <Label hint={o.tiebreak === 'big' ? t('tiebreakBigHint') : t('tiebreakDefaultHint')}>{t('tiebreak')}</Label>
+        <Segmented
+          fit
+          label={t('tiebreak')}
+          value={o.tiebreak}
+          onChange={(v) => set({ tiebreak: v })}
+          options={[
+            { value: 'default', label: t('tiebreakDefault') },
+            { value: 'big', label: t('tiebreakBig') },
           ]}
         />
       </div>

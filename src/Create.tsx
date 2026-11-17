@@ -1,5 +1,5 @@
 import { EmojiPicker } from './EmojiPicker'
-import { Emoji, Icon } from './icons'
+import { Emoji, Icon, type IconName } from './icons'
 import { useState, type ReactNode } from 'react'
 import { MIN_PLAYERS, type Format, type Options, type Player, type Tournament } from './engine'
 import { useLang } from './i18n'
@@ -8,7 +8,7 @@ import { PlayersEditor } from './Players'
 import { PartyEditor, PointsEditor } from './Scoring'
 import { go } from './router'
 import { rememberOnline, saveLocal } from './store'
-import { btn, field, iconBtn, toast, Toggle } from './ui'
+import { btn, field, iconBtn, shake, toast, Toggle } from './ui'
 import { formatEmoji, newTournament } from './view'
 
 const DRAFT = 'matcha:draft'
@@ -51,8 +51,17 @@ export function Create() {
   const opt = (patch: Options) => update({ options: { ...d.options, ...patch } })
 
   async function submit() {
-    if (!d.name.trim()) return document.getElementById('t-name')?.focus()
-    if (d.players.length < MIN_PLAYERS) return toast(t('tooFew'))
+    const refuse = (message: string, id: string) => {
+      const el = document.getElementById(id)
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      shake(el)
+      toast(message)
+    }
+    if (!d.name.trim()) {
+      refuse(t('needName'), 't-name')
+      return document.getElementById('t-name')?.focus({ preventScroll: true })
+    }
+    if (d.players.length < MIN_PLAYERS) return refuse(t('tooFew'), 't-players')
     const tour = newTournament({ name: d.name.trim(), emoji: d.emoji, format: d.format, players: d.players, options: d.options })
     if (d.where === 'local') {
       saveLocal(tour)
@@ -72,7 +81,7 @@ export function Create() {
   }
 
   return (
-    <main className="mx-auto max-w-xl px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <main className="fade-in mx-auto max-w-xl px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)_+_0.5rem))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <header className="-ml-2 flex items-center gap-1">
         <a href="#/" aria-label={t('back')} className={iconBtn}>
           <Icon name="back" size={22} />
@@ -80,7 +89,7 @@ export function Create() {
         <h1 className="font-display text-xl font-bold">{t('newTournament')}</h1>
       </header>
 
-      <Section title={t('name')}>
+      <Section icon="edit" title={t('name')}>
         <input
           id="t-name"
           value={d.name}
@@ -95,7 +104,7 @@ export function Create() {
         </div>
       </Section>
 
-      <Section title={t('format')}>
+      <Section icon="gamepad" title={t('format')}>
         <div className="grid gap-2">
           {(['single', 'double', 'roundrobin', 'party'] as const).map((f) => (
             <button
@@ -129,11 +138,13 @@ export function Create() {
         </div>
       </Section>
 
-      <Section title={`${t('players')}${d.players.length ? ` · ${d.players.length}` : ''}`}>
-        <PlayersEditor players={d.players} onChange={(players) => update({ players })} />
+      <Section icon="users" title={`${t('players')}${d.players.length ? ` · ${d.players.length}` : ''}`}>
+        <div id="t-players">
+          <PlayersEditor players={d.players} onChange={(players) => update({ players })} />
+        </div>
       </Section>
 
-      <Section title={t('where')}>
+      <Section icon="cloud" title={t('where')}>
         <div className="grid grid-cols-2 gap-2">
           <Choice active={d.where === 'local'} onClick={() => update({ where: 'local' })} icon={<Emoji e="📱" className="hop text-[28px]" />} title={t('local')} hint={t('localHint')} />
           <Choice active={d.where === 'online'} onClick={() => update({ where: 'online' })} icon={<Emoji e="☁️" className="hop text-[28px]" />} title={t('online')} hint={t('onlineHint')} />
@@ -151,10 +162,12 @@ export function Create() {
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon: IconName; children: ReactNode }) {
   return (
     <section className="mt-7">
-      <h2 className="mb-2.5 text-sm font-semibold text-mute">{title}</h2>
+      <h2 className="mb-2.5 flex items-center gap-1.5 text-sm font-semibold text-mute">
+        <Icon name={icon} size={16} /> {title}
+      </h2>
       {children}
     </section>
   )

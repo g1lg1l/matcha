@@ -66,6 +66,20 @@
   }
 }
 
+/* arcade key: a darker lip under the button that the press pushes down into */
+@utility key {
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.28);
+  padding-bottom: 4px;
+  transition:
+    translate 80ms,
+    box-shadow 80ms,
+    background-color 150ms;
+  &:active:not(:disabled) {
+    translate: 0 2px;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.28);
+  }
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
 }
@@ -73,6 +87,25 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    /* no double-tap zoom, so taps land at once */
+    touch-action: manipulation;
+  }
+  /* glows and sparks may reach past a card, never past the screen: no sideways scroll */
+  #root {
+    overflow-x: clip;
+  }
+  /* the page behind an open sheet stays put */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+  /* a long press on a control is not a text selection or a link preview */
+  a,
+  button,
+  label {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
   body {
     @apply bg-paper text-ink font-sans antialiased;
@@ -83,6 +116,21 @@
   }
   button:not(:disabled) {
     cursor: pointer;
+  }
+  ::selection {
+    background: var(--brand);
+    color: var(--on-primary);
+  }
+  input {
+    caret-color: var(--brand);
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
   * {
     scrollbar-width: thin;
@@ -132,22 +180,23 @@ dialog.sheet:not([open])::backdrop {
   }
 }
 
-.toast {
-  transition:
-    translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 0.2s,
-    display 0.25s allow-discrete,
-    overlay 0.25s allow-discrete;
-}
-.toast:not(:popover-open) {
-  translate: 0 -12px;
-  opacity: 0;
-}
-@starting-style {
-  .toast:popover-open {
-    translate: 0 -12px;
-    opacity: 0;
-  }
+/* the box Sileo's toasts live in: nothing itself, only a way into the top layer (see Toaster in ui.tsx) */
+.toasts {
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+  /* Sileo's tones, in matcha */
+  --sileo-state-action: var(--brand);
+  --sileo-state-info: var(--brand);
+  --sileo-state-success: var(--brand);
+  --sileo-state-loading: var(--mute);
+  --sileo-state-error: var(--danger);
 }
 
 /* new cards and ticked boxes pop */
@@ -159,6 +208,126 @@ dialog.sheet:not([open])::backdrop {
 }
 .pop {
   animation: pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+/* screens move like a native stack (see useRoute in router.ts) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:root[data-nav="forward"]::view-transition-old(root) { animation-name: nav-out-left; }
+:root[data-nav="forward"]::view-transition-new(root) { animation-name: nav-in-right; }
+:root[data-nav="back"]::view-transition-old(root) { animation-name: nav-out-right; }
+:root[data-nav="back"]::view-transition-new(root) { animation-name: nav-in-left; }
+@keyframes nav-in-right { from { translate: 28% 0; opacity: 0; } }
+@keyframes nav-out-left { to { translate: -14% 0; opacity: 0; } }
+@keyframes nav-in-left { from { translate: -28% 0; opacity: 0; } }
+@keyframes nav-out-right { to { translate: 14% 0; opacity: 0; } }
+/* where screens slide, they don't also fade in */
+@supports (view-transition-name: none) {
+  main.fade-in {
+    animation: none;
+  }
+}
+
+/* a line of facts split by dots; a dot that would start a wrapped line is clipped away */
+.dots {
+  overflow: hidden;
+}
+.dots > * {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 2px;
+  margin-left: -1rem;
+}
+.dots > * > * {
+  position: relative;
+  padding-left: 1rem;
+}
+.dots > * > *::before {
+  content: "·";
+  position: absolute;
+  left: 0.375rem;
+  color: var(--mute);
+}
+
+/* bracket wires: grey until someone has gone down them, then lit and glowing */
+.wire-out::after,
+.wire-in::before,
+.wire-join::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--ink) 22%, transparent);
+  transition:
+    background-color 0.5s,
+    box-shadow 0.5s;
+}
+.wire-out::after {
+  top: 50%;
+  left: 100%;
+  width: 1rem;
+  height: 2px;
+  translate: 0 -1px;
+}
+.wire-in::before {
+  top: 50%;
+  right: 100%;
+  width: 1rem;
+  height: 2px;
+  translate: 0 -1px;
+}
+.wire-join::before {
+  top: 25%;
+  bottom: 25%;
+  left: calc(100% + 1rem - 1px);
+  width: 2px;
+}
+.wire-out.lit-out::after,
+.wire-in.lit-in::before,
+.wire-join.lit-in::before {
+  background: var(--brand);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--brand) 75%, transparent);
+}
+
+/* the round being played blinks like an arcade prompt */
+@keyframes blink {
+  50% { opacity: 0.2; }
+}
+.blink {
+  animation: blink 1s steps(2, jump-none) infinite;
+}
+
+/* lists deal their rows in one after the other */
+.stagger > * {
+  animation: fade-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.stagger > :nth-child(2) { animation-delay: 40ms; }
+.stagger > :nth-child(3) { animation-delay: 80ms; }
+.stagger > :nth-child(4) { animation-delay: 120ms; }
+.stagger > :nth-child(5) { animation-delay: 160ms; }
+.stagger > :nth-child(6) { animation-delay: 200ms; }
+.stagger > :nth-child(7) { animation-delay: 240ms; }
+.stagger > :nth-child(n + 8) { animation-delay: 280ms; }
+
+/* a light sweeps across the main action now and then */
+.shine {
+  position: relative;
+}
+.shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.55) 50%, transparent 60%);
+  translate: -100% 0;
+  animation: shine 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes shine {
+  0%, 70% { translate: -100% 0; }
+  100% { translate: 100% 0; }
 }
 
 /* pixel confetti (see burst() in ui.tsx) */

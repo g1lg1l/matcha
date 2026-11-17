@@ -1,8 +1,9 @@
 import { EmojiPicker } from './EmojiPicker'
-import { Icon } from './icons'
-import { useEffect, useState } from 'react'
+import { Icon, type IconName } from './icons'
+import { useEffect, useState, type ReactNode } from 'react'
+import HoldButton from './bits/HoldButton'
 import { prune, started, type Tournament } from './engine'
-import { setLang, useLang } from './i18n'
+import { useLang } from './i18n'
 import { errorText, refereeCode, resetRefereeCode, shareUrl } from './online'
 import { PlayersEditor } from './Players'
 import { duplicate } from './Create'
@@ -10,22 +11,24 @@ import { nextRound } from './party'
 import { go } from './router'
 import { PartyEditor, PointsEditor } from './Scoring'
 import type { Source } from './TournamentPage'
-import { btn, danger, field, ghost, outline, Segmented, shareLink, Sheet, toast, Toggle } from './ui'
+import { btn, field, ghost, outline, shareLink, Sheet, toast, Toggle } from './ui'
 
 export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }: { source: Source; onClose: () => void; onShare: () => void; onPublish: () => Promise<void>; onRemove: () => void }) {
-  const { t, lang } = useLang()
+  const { t } = useLang()
   const tour = source.t
   const { save, canEdit, online } = source
   const locked = started(tour)
   const [publishing, setPublishing] = useState(false)
-  const h = 'mb-2.5 text-sm font-semibold text-mute'
+  const h = 'mb-2.5 flex items-center gap-1.5 text-sm font-semibold text-mute'
 
   return (
-    <Sheet label={t('settings')} onClose={onClose} header={<p className="font-display font-semibold">{t('settings')}</p>}>
+    <Sheet label={t('tournamentSettings')} onClose={onClose} header={<p className="font-display font-semibold">{t('tournamentSettings')}</p>}>
       <div className="grid grid-cols-1 gap-8">
         {canEdit && (
           <section>
-            <h3 className={h}>{t('rename')}</h3>
+            <h3 className={h}>
+              <Icon name="edit" size={16} /> {t('rename')}
+            </h3>
             <input
               key={tour.name}
               defaultValue={tour.name}
@@ -47,7 +50,9 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
 
         {online && (
           <section>
-            <h3 className={h}>{t('share')}</h3>
+            <h3 className={h}>
+              <Icon name="share" size={16} /> {t('share')}
+            </h3>
             <div className="flex items-center gap-2 rounded-xl bg-raised py-1.5 pr-1.5 pl-3.5">
               <span className="min-w-0 flex-1 truncate font-mono text-sm">{shareUrl(online.code)}</span>
               <button
@@ -67,7 +72,9 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
 
         {!online && (
           <section>
-            <h3 className={h}>{t('online')}</h3>
+            <h3 className={h}>
+              <Icon name="cloud" size={16} /> {t('online')}
+            </h3>
             <p className="mb-3 text-sm text-mute">{t('publishHint')}</p>
             <button
               disabled={publishing}
@@ -85,7 +92,9 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
 
         {canEdit && (tour.format === 'single' || tour.format === 'double') && (
           <section className="grid gap-4">
-            <h3 className={`${h} mb-0`}>{t('options')}</h3>
+            <h3 className={`${h} mb-0`}>
+              <Icon name="sliders" size={16} /> {t('options')}
+            </h3>
             {tour.format === 'single' && (
               <Toggle label={t('thirdPlace')} hint={t('thirdPlaceHint')} checked={!!tour.options.thirdPlace} onChange={(v) => save(prune({ ...tour, options: { ...tour.options, thirdPlace: v } }))} />
             )}
@@ -96,14 +105,18 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
         )}
         {canEdit && tour.format === 'roundrobin' && (
           <section className="grid grid-cols-1 gap-5">
-            <h3 className={`${h} mb-0`}>{t('options')}</h3>
+            <h3 className={`${h} mb-0`}>
+              <Icon name="sliders" size={16} /> {t('options')}
+            </h3>
             <Toggle label={t('legs')} hint={t('legsHint')} disabled={locked} checked={tour.options.legs === 2} onChange={(v) => save({ ...tour, options: { ...tour.options, legs: v ? 2 : 1 } })} />
             <PointsEditor value={tour.options.points} onChange={(points) => save({ ...tour, options: { ...tour.options, points } })} />
           </section>
         )}
         {canEdit && tour.format === 'party' && (
           <section className="grid grid-cols-1">
-            <h3 className={h}>{t('scoring')}</h3>
+            <h3 className={h}>
+              <Icon name="sliders" size={16} /> {t('scoring')}
+            </h3>
             <PartyEditor
               value={tour.options.party}
               minRounds={tour.tables?.length ?? 1}
@@ -119,7 +132,7 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
         {canEdit && (
           <section>
             <h3 className={h}>
-              {t('players')} · {tour.players.length}
+              <Icon name="users" size={16} /> {t('players')} · {tour.players.length}
             </h3>
             <PlayersEditor
               players={tour.players}
@@ -134,20 +147,8 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
           </section>
         )}
 
-        <section>
-          <h3 className={h}>{t('language')}</h3>
-          <Segmented
-            label={t('language')}
-            value={lang}
-            onChange={setLang}
-            options={[
-              { value: 'it', label: '🇮🇹 Italiano' },
-              { value: 'en', label: '🇬🇧 English' },
-            ]}
-          />
-        </section>
-
-        <section className="grid gap-1 border-t border-line pt-4">
+        {/* bleeds to the sheet's edges, one step lighter like a sheet footer */}
+        <section className="-mx-5 -mb-[max(1.5rem,env(safe-area-inset-bottom))] grid gap-2 border-t border-line bg-raised px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <button
             onClick={() => {
               duplicate(tour)
@@ -158,24 +159,13 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
             <Icon name="copy" size={16} /> {t('duplicate_t')}
           </button>
           {canEdit && locked && (
-            <button
-              onClick={() => {
-                if (confirm(t('restartConfirm', { name: tour.name }))) save({ ...tour, results: {} })
-              }}
-              className={danger}
-            >
+            <Hold icon="restart" onHold={() => save({ ...tour, results: {} })}>
               {t('restart')}
-            </button>
+            </Hold>
           )}
-          {!online || online.role === 'owner' ? (
-            <button onClick={onRemove} className={danger}>
-              {t('remove_t')}
-            </button>
-          ) : (
-            <button onClick={onRemove} className={danger}>
-              {t('unfollow')}
-            </button>
-          )}
+          <Hold icon={!online || online.role === 'owner' ? 'trash' : 'userX'} onHold={onRemove}>
+            {!online || online.role === 'owner' ? t('remove_t') : t('unfollow')}
+          </Hold>
         </section>
       </div>
     </Sheet>
@@ -212,22 +202,47 @@ function RefereeLink({ id, code, name }: { id: string; code: string; name: strin
           <Icon name="copy" size={17} />
         </button>
       </div>
-      <button
-        disabled={!referee}
-        onClick={async () => {
-          if (!confirm(t('resetRefereeConfirm'))) return
-          try {
-            setReferee(await resetRefereeCode(id))
-            toast(t('refereeWasReset'))
-          } catch (e) {
-            toast(errorText(e))
-          }
-        }}
-        className={`${danger} mt-2`}
-      >
-        {t('resetReferee')}
-      </button>
+      <div className="mt-2">
+        <Hold
+          icon="restart"
+          disabled={!referee}
+          onHold={async () => {
+            try {
+              setReferee(await resetRefereeCode(id))
+              toast(t('refereeWasReset'))
+            } catch (e) {
+              toast(errorText(e))
+            }
+          }}
+        >
+          {t('resetReferee')}
+        </Hold>
+      </div>
     </section>
+  )
+}
+
+/** An action that can't be taken back: hold the button until it fills (React Bits HoldButton). A tap only says so. */
+function Hold({ children, onHold, disabled, icon }: { children: ReactNode; onHold: () => void; disabled?: boolean; icon: IconName }) {
+  const { t } = useLang()
+  return (
+    <HoldButton
+      icon={<Icon name={icon} size={18} />}
+      onHold={onHold}
+      onTap={() => toast(t('holdToConfirm'))}
+      disabled={disabled}
+      holdTime={900}
+      size="md"
+      radius={6}
+      backgroundColor="#2a2a2a"
+      fillColor="#ff6b5e"
+      textColor="#ff6b5e"
+      fillTextColor="#000000"
+      doneLabel={t('done')}
+      className="w-full"
+    >
+      {children}
+    </HoldButton>
   )
 }
 

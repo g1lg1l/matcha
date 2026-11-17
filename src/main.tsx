@@ -17,7 +17,6 @@ if (Capacitor.isNativePlatform()) {
 }
 
 window.scrollTo(0, 0)
-addEventListener('hashchange', () => window.scrollTo(0, 0))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

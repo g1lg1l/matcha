@@ -60,8 +60,11 @@ describe('single elimination', () => {
     let t = make(4, 'single')
     t = win(t, 'W1-0', 'a', [3, 1]) // p1 beats p4
     t = win(t, 'W1-1', 'b') // p3 beats p2
+    // one semifinal in: its loser is last for now, never first
+    expect([...build(win(make(4, 'single'), 'W1-0', 'a')).ranks.entries()]).toEqual([['p4', 4]])
     const mid = build(t)
     expect(mid.byId.get('W2-0')).toMatchObject({ a: 'p1', b: 'p3', status: 'ready' })
+    expect([...mid.ranks.values()]).toEqual([3, 3])
     t = win(t, 'W2-0', 'b')
     const done = build(t)
     expect(done.champion).toBe('p3')

@@ -2,7 +2,7 @@ import { Emoji, Icon } from './icons'
 import { useRef, useState } from 'react'
 import { build, withResult, type Built, type Match, type Result, type Side, type Tournament } from './engine'
 import { useLang } from './i18n'
-import { Avatar, btn, burst, closeSheet, danger, Sheet, toast } from './ui'
+import { Avatar, btn, burst, closeSheet, danger, Sheet, tick, toast } from './ui'
 import { colorOfIndex, roundLabel, sectionLabel } from './view'
 
 export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: Tournament; b: Built; onResult: (matchId: string, r: Result | null) => void; onClose: () => void }) {
@@ -67,7 +67,7 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
           <Avatar {...p} size={38} />
           <span className="min-w-0">
             <span className="block truncate font-display text-[17px] font-semibold">{p.name}</span>
-            <span className={`flex items-center gap-1 text-sm ${picked ? 'font-semibold text-brand' : 'text-mute'}`}>
+            <span key={`${picked}`} className={`flex origin-left items-center gap-1 text-sm ${picked ? 'pop font-semibold text-brand' : 'text-mute'}`}>
               {picked ? (
                 <>
                   <Icon name="crown" size={14} /> {t('winner')}
@@ -97,11 +97,11 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
         <div className="flex items-center gap-3">
           {m.status === 'done' && (
             <button onClick={clear} className={danger}>
-              {t('clearResult')}
+              <Icon name="trash" size={16} /> {t('clearResult')}
             </button>
           )}
           <button ref={saveRef} onClick={save} disabled={!w} className={`${btn} ml-auto`}>
-            {t('saveResult')}
+            <Icon name="check" size={18} /> {t('saveResult')}
           </button>
         </div>
       }
@@ -128,13 +128,19 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
 
 function Stepper({ value, onChange, label }: { value: number | null; onChange: (v: number | null) => void; label: string }) {
   const { t } = useLang()
-  const round = 'grid size-9 place-items-center pixel bg-raised text-mute transition hover:text-ink active:scale-90 disabled:opacity-30'
+  const round = 'grid size-10 place-items-center pixel bg-raised text-mute transition hover:text-ink active:scale-90 disabled:opacity-30'
+  const field = useRef<HTMLInputElement>(null)
+  const bump = (v: number | null) => {
+    onChange(v)
+    tick(field.current)
+  }
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <button aria-label={t('less')} disabled={!value} onClick={() => onChange(value ? value - 1 : null)} className={round}>
+      <button aria-label={t('less')} disabled={!value} onClick={() => bump(value ? value - 1 : null)} className={round}>
         <Icon name="minus" size={16} />
       </button>
       <input
+        ref={field}
         inputMode="numeric"
         aria-label={label}
         value={value ?? ''}
@@ -146,7 +152,7 @@ function Stepper({ value, onChange, label }: { value: number | null; onChange: (
         onFocus={(e) => e.target.select()}
         className="h-11 w-12 rounded-xl bg-raised text-center font-display text-xl font-bold tabular-nums placeholder:text-mute/60 focus:outline-2 focus:outline-brand"
       />
-      <button aria-label={t('more')} onClick={() => onChange((value ?? 0) + 1)} className={round}>
+      <button aria-label={t('more')} onClick={() => bump((value ?? 0) + 1)} className={round}>
         <Icon name="add" size={16} />
       </button>
     </div>

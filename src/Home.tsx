@@ -1,14 +1,18 @@
 import { Capacitor } from '@capacitor/core'
 import { Emoji, Icon } from './icons'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import LogoLoop from './bits/LogoLoop'
+import PixelCard from './bits/PixelCard'
+import RotatingText from './bits/RotatingText'
+import SwipeRow from './bits/SwipeRow'
 import type { Tournament } from './engine'
-import { setLang, useLang } from './i18n'
+import { useLang } from './i18n'
 import { parseCode } from './online'
 import { go } from './router'
-import { useStore, type Role } from './store'
+import { removeLocal, saveLocal, useStore, type Role } from './store'
 import { RoleBadge } from './TournamentPage'
-import { field, Logo, outline, pill, Segmented, toast } from './ui'
-import { formatEmoji, summary } from './view'
+import { field, iconBtn, Logo, outline, pill, Scramble, toast } from './ui'
+import { EMOJIS, formatEmoji, summary } from './view'
 
 type Entry = { key: string; href: string; t: Tournament; online?: Role }
 
@@ -21,36 +25,38 @@ export function Home() {
   ].sort((a, b) => b.t.updatedAt.localeCompare(a.t.updatedAt))
 
   return (
-    <main className="mx-auto max-w-xl px-5 pt-[max(2.5rem,env(safe-area-inset-top))] pb-16">
+    <main className="fade-in mx-auto max-w-xl px-5 pt-[max(2.5rem,calc(env(safe-area-inset-top)_+_1rem))] pb-16">
       <header className="flex items-center gap-3">
         <Logo className="size-11" />
-        <h1 className="font-display text-[28px] font-bold tracking-tight">matcha</h1>
-        <div className="ml-auto">
-          <Segmented
-            label={t('language')}
-            value={lang}
-            onChange={setLang}
-            options={[
-              { value: 'it', label: 'IT' },
-              { value: 'en', label: 'EN' },
-            ]}
-          />
-        </div>
+        <h1 className="font-display text-[28px] font-bold tracking-tight"><Scramble text="matcha" once /></h1>
+        <a href="#/settings" aria-label={t('settings')} className={`${iconBtn} twist -mr-2 ml-auto`}>
+          <Icon name="settings" size={22} />
+        </a>
       </header>
       <p className="mt-5 max-w-[36ch] text-[17px] leading-relaxed text-mute">{t('tagline')}</p>
+      <RotatingText
+        key={lang}
+        texts={[t('single'), t('double'), t('roundrobin'), t('party')]}
+        rotationInterval={2600}
+        staggerDuration={0.02}
+        mainClassName="mt-3 overflow-hidden font-display text-xl text-brand"
+        splitLevelClassName="overflow-hidden"
+      />
       {!entries.length && <Toys />}
 
-      <a href="#/new" className={`${pill} mt-8 h-14 w-full text-[17px]`}>
+      <a href="#/new" className={`${pill} ${entries.length ? '' : 'shine'} mt-8 h-14 w-full text-[17px]`}>
         <Icon name="add" size={22} /> {entries.length ? t('newTournament') : t('firstTournament')}
       </a>
 
       {entries.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-sm font-semibold text-mute">{t('yourTournaments')}</h2>
-          <ul className="mt-3 grid gap-2">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-mute">
+            <Icon name="trophy" size={16} /> {t('yourTournaments')}
+          </h2>
+          <ul className="stagger mt-3 grid gap-2">
             {entries.map((e) => (
               <li key={e.key}>
-                <Card entry={e} />
+                {e.online ? <Card entry={e} /> : <SwipeCard entry={e} />}
               </li>
             ))}
           </ul>
@@ -63,33 +69,78 @@ export function Home() {
   )
 }
 
+// A tournament kept on this device swipes away to delete (React Bits SwipeRow); the toast brings it back.
+function SwipeCard({ entry }: { entry: Entry }) {
+  const { t } = useLang()
+  const inner = useRef<HTMLDivElement>(null)
+  const downX = useRef(0)
+  const [height, setHeight] = useState(78)
+  useEffect(() => {
+    const el = inner.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const remove = () => {
+    removeLocal(entry.t.id)
+    toast(t('deleted'), { label: t('undo'), run: () => saveLocal(entry.t) })
+  }
+  return (
+    <SwipeRow
+      label={entry.t.name}
+      height={height}
+      radius={8}
+      rowColor="#111111"
+      drawerColor="#1d1d1d"
+      actionColor="#ff6b5e"
+      actions={[{ id: 'delete', label: t('swipeDelete'), dismiss: true }]}
+      onCommit={remove}
+      onAction={remove}
+    >
+      {/* with a mouse, letting go after a swipe is also a click on the card: don't follow the link then */}
+      <div
+        ref={inner}
+        className="w-full"
+        onPointerDown={(e) => (downX.current = e.clientX)}
+        onClickCapture={(e) => Math.abs(e.clientX - downX.current) > 10 && e.preventDefault()}
+      >
+        <Card entry={entry} />
+      </div>
+    </SwipeRow>
+  )
+}
+
 const phaseTint = { new: 'bg-c-sky', live: 'bg-c-peach', done: 'bg-c-lemon' }
 
 function Card({ entry }: { entry: Entry }) {
   const { t } = useLang()
   const { phase, champion, progress } = summary(entry.t)
   return (
-    <a href={entry.href} className="hoppy flex items-center gap-4 rounded-2xl border border-line bg-sheet p-3.5 transition-colors hover:border-brand">
+    <a href={entry.href} draggable={false} className="hoppy flex items-center gap-4 rounded-2xl border border-line bg-sheet p-3.5 transition hover:border-brand active:scale-[0.98]">
       <span className={`grid size-12 shrink-0 place-items-center rounded-xl text-[28px] ${phaseTint[phase]}`}>
         <Emoji e={entry.t.emoji} className="hop" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-display text-[16px] font-semibold">{entry.t.name}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-mute">
-          <span className="inline-flex items-center gap-1">
-            <Emoji e={formatEmoji[entry.t.format]} /> {t(entry.t.format)}
-          </span>
-          <span aria-hidden>·</span>
-          {phase === 'done' ? (
-            <span className="inline-flex min-w-0 items-center gap-1 font-medium text-ink">
-              <Emoji e="👑" /> <span className="truncate">{champion}</span>
+        <span className="dots mt-0.5 block text-sm text-mute">
+          <span>
+            <span className="inline-flex items-center gap-1">
+              <Emoji e={formatEmoji[entry.t.format]} /> {t(entry.t.format)}
             </span>
-          ) : (
-            <span>{phase === 'live' ? t('inProgress') : t('playersCount', { n: entry.t.players.length })}</span>
-          )}
-          {entry.online && (
-            <RoleBadge role={entry.online} />
-          )}
+            {phase === 'done' ? (
+              <span className="inline-flex min-w-0 items-center gap-1 font-medium text-ink">
+                <Emoji e="👑" /> <span className="truncate">{champion}</span>
+              </span>
+            ) : (
+              <span>{phase === 'live' ? t('inProgress') : t('playersCount', { n: entry.t.players.length })}</span>
+            )}
+            {entry.online && (
+              <span>
+                <RoleBadge role={entry.online} />
+              </span>
+            )}
+          </span>
         </span>
         {phase === 'live' && (
           <span className="mt-2 block h-1.5 overflow-hidden rounded-none bg-well" aria-hidden>
@@ -107,7 +158,9 @@ function OpenLink() {
   const [value, setValue] = useState('')
   return (
     <section className="mt-10">
-      <h2 className="text-sm font-semibold text-mute">{t('openLink')}</h2>
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-mute">
+        <Icon name="link" size={16} /> {t('openLink')}
+      </h2>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -119,7 +172,7 @@ function OpenLink() {
       >
         <input value={value} onChange={(e) => setValue(e.target.value)} placeholder={t('openLinkHint')} aria-label={t('openLinkHint')} autoCapitalize="off" autoCorrect="off" spellCheck={false} className={`${field} min-w-0`} />
         <button disabled={!value.trim()} className={`${outline} shrink-0`}>
-          {t('open')}
+          {t('open')} <Icon name="go" size={18} />
         </button>
       </form>
     </section>
@@ -143,7 +196,7 @@ function InstallCard() {
     addEventListener('installable', ready)
     return () => removeEventListener('installable', ready)
   }, [])
-  const installed = Capacitor.isNativePlatform() || matchMedia('(display-mode: standalone)').matches || 'standalone' in navigator
+  const installed = Capacitor.isNativePlatform() || matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
   if (installed || (!prompt && !ios)) return null
   const [before, after] = t('installIos').split('{share}')
@@ -174,27 +227,29 @@ function InstallCard() {
           }}
           className={`${pill} h-9 px-4 text-sm`}
         >
-          {t('install')}
+          <Icon name="download" size={16} /> {t('install')}
         </button>
       )}
     </section>
   )
 }
 
-// Something to look at before the first tournament: a few toys bobbing about.
-const toys = [
-  { e: '🏓', tilt: '-10deg', size: 'text-[38px]', delay: '0s' },
-  { e: '🎲', tilt: '8deg', size: 'text-[46px]', delay: '-0.8s' },
-  { e: '🏆', tilt: '-4deg', size: 'text-[64px]', delay: '-1.6s' },
-  { e: '♟️', tilt: '10deg', size: 'text-[44px]', delay: '-2.4s' },
-  { e: '⚽', tilt: '-8deg', size: 'text-[38px]', delay: '-0.4s' },
-]
+// Something to look at before the first tournament: every game you could play, drifting past over twinkling pixels
+// (React Bits PixelCard and LogoLoop).
 function Toys() {
   return (
-    <div className="mt-8 flex items-end justify-center gap-3 rounded-[10px] bg-c-mint px-4 pt-7 pb-6" aria-hidden>
-      {toys.map((x) => (
-        <Emoji key={x.e} e={x.e} className={`bob ${x.size}`} style={{ '--tilt': x.tilt, animationDelay: x.delay } as CSSProperties} />
-      ))}
-    </div>
+    <PixelCard trigger="always" colors={['#26300d', '#3d4f12', '#c6f24e']} gap={7} pixelSize={3} speed={40} radius={10} noFocus className="mt-8 h-auto! w-full! bg-none! bg-c-mint! py-7 shadow-none!">
+      <LogoLoop
+        ariaLabel=""
+        logos={EMOJIS.map((e) => ({ node: <Emoji e={e} className="text-[44px]" /> }))}
+        speed={38}
+        logoHeight={44}
+        gap={28}
+        pauseOnHover={false}
+        fadeOut
+        fadeOutColor="#1b240a"
+        width="100%"
+      />
+    </PixelCard>
   )
 }

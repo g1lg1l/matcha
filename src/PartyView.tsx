@@ -3,8 +3,8 @@ import { Emoji, Icon } from './icons'
 import { useMemo, useRef, useState } from 'react'
 import { build, withResult, type Built, type Tournament } from './engine'
 import { useLang } from './i18n'
-import { nextRound, placePoints, placesFromScores, type Table, type TableResult } from './party'
-import { Avatar, btn, burst, closeSheet, danger, ghost, pill, Sheet, toast } from './ui'
+import { nextRound, partyOptions, placePoints, placesFor, placesFromScores, type Table, type TableResult } from './party'
+import { Avatar, btn, burst, closeSheet, Count, danger, ghost, pill, ReadyCard, Sheet, toast, useFlip } from './ui'
 import { colorOfIndex, num } from './view'
 
 const medal = (place: number) => (place <= 3 ? <Emoji e={['🥇', '🥈', '🥉'][place - 1]} className="text-lg" label={`${place}`} /> : undefined)
@@ -26,7 +26,7 @@ export function RoundsView({ t, b, canEdit, onOpen, onNextRound }: { t: Tourname
   return (
     <div className="grid grid-cols-1 gap-8">
       {canSeat && (
-        <button onClick={onNextRound} className={`${pill} pop h-14 w-full text-[17px]`}>
+        <button onClick={onNextRound} className={`${pill} shine pop h-14 w-full text-[17px]`}>
           <Icon name="stars" size={20} /> {tr('nextRound', { n: b.roundsPlayed + 1 })}
         </button>
       )}
@@ -39,7 +39,7 @@ export function RoundsView({ t, b, canEdit, onOpen, onNextRound }: { t: Tourname
               {tr('roundOf', { n: r, total })}
               {done && <Icon name="check" size={16} className="text-brand" />}
             </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="stagger grid gap-3 sm:grid-cols-2">
               {tables.map((table) => (
                 <TableCard key={table.id} table={table} who={who} canEdit={canEdit} onOpen={() => onOpen(table)} />
               ))}
@@ -79,8 +79,10 @@ function TableCard({ table, who, canEdit, onOpen }: { table: Table; who: ReturnT
       </ol>
     </>
   )
-  const base = `block w-full overflow-hidden rounded-2xl bg-sheet text-left ${!r ? 'border-l-4 border-brand' : ''}`
-  return canEdit ? (
+  const base = 'block w-full overflow-hidden rounded-2xl bg-sheet text-left'
+  return canEdit && !r ? (
+    <ReadyCard onClick={onOpen}>{body}</ReadyCard>
+  ) : canEdit ? (
     <button onClick={onOpen} className={`${base} transition hover:ring-2 hover:ring-brand/40 active:scale-[0.99]`}>
       {body}
     </button>
@@ -92,8 +94,9 @@ function TableCard({ table, who, canEdit, onOpen }: { table: Table; who: ReturnT
 export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table; tour: Tournament; b: Built; onResult: (id: string, r: TableResult | null) => void; onClose: () => void }) {
   const { t } = useLang()
   const who = usePlayer(tour)
-  const opts = { places: [10, 6, 3, 1], lowWins: false, ...tour.options.party }
+  const opts = partyOptions(tour)
   const saveRef = useRef<HTMLButtonElement>(null)
+  const list = useFlip<HTMLOListElement>()
   const ids = table.players
   const initial = table.result
   // tap order, for when there are no scores
@@ -103,7 +106,7 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
   const fromScores = placesFromScores(ids, score, opts.lowWins)
   const place: Record<string, number> = fromScores ?? Object.fromEntries(order.map((id, i) => [id, i + 1]))
   const complete = ids.every((id) => place[id])
-  const points = complete ? placePoints(place, opts.places) : {}
+  const points = complete ? placePoints(place, placesFor(opts, ids.length)) : {}
 
   const tap = (id: string) => {
     if (fromScores) return
@@ -141,7 +144,7 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
               }}
               className={danger}
             >
-              {t('clearResult')}
+              <Icon name="trash" size={16} /> {t('clearResult')}
             </button>
           ) : (
             <button
@@ -155,20 +158,20 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
             </button>
           )}
           <button ref={saveRef} onClick={save} disabled={!complete} className={`${btn} ml-auto`}>
-            {t('saveResult')}
+            <Icon name="check" size={18} /> {t('saveResult')}
           </button>
         </div>
       }
     >
       <p className="mb-4 text-sm text-mute">{t('finishOrder')}</p>
-      <ol className="grid grid-cols-1 gap-2">
+      <ol ref={list} className="grid grid-cols-1 gap-2">
         {sorted.map((id) => {
           const p = who(id)
           const pl = place[id]
           return (
-            <li key={id} className={`flex items-center gap-2 rounded-2xl border-2 p-1.5 transition ${pl === 1 ? 'border-brand bg-c-mint' : pl ? 'border-line' : 'border-dashed border-line'}`}>
+            <li key={id} data-flip={id} className={`flex items-center gap-2 rounded-2xl border-2 p-1.5 transition ${pl === 1 ? 'border-brand bg-c-mint' : pl ? 'border-line' : 'border-dashed border-line'}`}>
               <button onClick={() => tap(id)} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 text-left active:scale-[0.98]" aria-label={p.name}>
-                <span className={`grid size-10 shrink-0 place-items-center pixel text-lg font-bold tabular-nums ${pl ? 'bg-sheet' : 'bg-raised text-mute'}`}>
+                <span key={pl ?? 0} className={`grid size-10 shrink-0 place-items-center pixel text-lg font-bold tabular-nums ${pl ? 'pop bg-sheet' : 'bg-raised text-mute'}`}>
                   {pl ? (medal(pl) ?? `${pl}°`) : '·'}
                 </span>
                 <span className="min-w-0">
@@ -203,7 +206,7 @@ export function PartyStandings({ t, b }: { t: Tournament; b: Built }) {
   const { t: tr } = useLang()
   const who = usePlayer(t)
   const showScore = b.rows.some((r) => r.hasScore)
-  const byScore = t.options.party?.rankBy === 'score'
+  const byScore = partyOptions(t).rankBy === 'score'
   const th = 'px-1.5 py-2 text-center font-semibold'
   return (
     <div className="-mx-1 overflow-x-auto">
@@ -233,7 +236,7 @@ export function PartyStandings({ t, b }: { t: Tournament; b: Built }) {
                 <td className="px-1.5 text-center text-mute">{r.played}</td>
                 <td className="px-1.5 text-center">{r.wins}</td>
                 {showScore && <td className={`px-1.5 text-center ${byScore ? 'font-bold' : 'text-mute'}`}>{r.hasScore ? num(r.score) : '–'}</td>}
-                <td className={`px-1.5 text-center ${byScore ? 'text-mute' : 'font-bold'}`}>{num(r.points)}</td>
+                <td className={`px-1.5 text-center ${byScore ? 'text-mute' : 'font-bold'}`}><Count n={r.points} /></td>
               </tr>
             )
           })}

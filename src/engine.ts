@@ -321,11 +321,12 @@ export function build(t: Input): Built {
   // Ranking: champion 1st, runner-up 2nd, then everyone by how late they went out. Same round, same rank.
   if (champion) ranks.set(champion, 1)
   if (runnerUp) ranks.set(runnerUp, 2)
-  let next = ranks.size + 1
   if (p3?.status === 'done') {
-    ranks.set(p3.winner!, next++)
-    ranks.set(p3.loser!, next++)
+    ranks.set(p3.winner!, 3)
+    ranks.set(p3.loser!, 4)
   }
+  // while it is still going, whoever is out ranks below everyone still in: count up from the bottom
+  let next = players.length - out.filter((o) => !ranks.has(o.player) && o.player !== runnerUp).length + 1
   const stages = [...new Set(out.map((o) => o.stage))].reverse()
   for (const stage of stages) {
     const group = out.filter((o) => o.stage === stage && !ranks.has(o.player) && o.player !== runnerUp)
