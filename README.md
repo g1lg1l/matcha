@@ -26,6 +26,7 @@
     - **Points by finishing place**: pick a preset (10·6·3·1, 3·2·1·0…) or type your own. Tied players share the points of the places they cover.
     - **Game scores (optional)**: type victory points, chips or strokes and the finishing order follows. Standings can go by place points or by total game score, with "lowest wins" for golf and the like.
     - **Seating**: random every round, or by standings so leaders play leaders. At tables of two it avoids rematches when it can.
+    - **BIG rulebook** ([Board Italian Gamers](https://boarditaliangamers.it)): a points preset with 1000 for 1st place and the rest by table size (2 to 7 players), and its tie-breaks: share of the table's score after round 1, then whoever played at the higher table.
 - **Any number of players**, from 2 to 128. Byes go to the top seeds. The list order is the seeding (#1 and #2 only meet in the final), or you can shuffle it. Paste a list to add everyone at once.
 - **Results in two taps.** Tap the winner, add scores if you like. Fix an old result and the bracket re-flows: later matches that no longer make sense reset by themselves. Every result can be undone for a few seconds, including what it reset.
 - **On your device or online.**
@@ -73,4 +74,14 @@ After any web change, `npm run cap:sync` copies the new build into both apps. Ic
 
 ### Deploy
 
-Pushing to `main` runs the tests and publishes to GitHub Pages (Settings → Pages → Source: GitHub Actions).
+Every push to `main` is linted, tested and built ([`ci.yml`](.github/workflows/ci.yml)); nothing is published.
+
+A release is a tag. Set the version in `package.json` (the app shows it in Settings), commit, then:
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+[`release.yml`](.github/workflows/release.yml) then tests and publishes the site to GitHub Pages (Settings → Pages → Source: GitHub Actions), builds `matcha.apk` and attaches it to a GitHub release with notes from the commits since the last one. The tag must match `package.json`.
+
+The APK is signed with the debug key. To have every release install over the last one, give the repository the secret `ANDROID_DEBUG_KEYSTORE`: one `debug.keystore`, base64 encoded. Without it each release is signed with a key of its own.

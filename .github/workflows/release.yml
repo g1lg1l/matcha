@@ -1,0 +1,118 @@
+# Publishes Matcha when a tag v* is pushed:
+#   Web:     tests, builds and puts the site on GitHub Pages
+#   Android: matcha.apk, attached to the GitHub release
+# The tag must match the version in package.json (the app shows it in Settings). The release starts as a
+# draft (or one already there, with its notes, is used) and is published once the site is live and the
+# APK is attached; a failure leaves the draft. The iPhone app is built from source: see the README.
+# By hand: gh workflow run Release -f tag=vX.Y.Z
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (it must exist)
+        required: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      # "v1.2.0" is "Matcha 1.2.0", its notes the commits since the last release
+      - run: |
+          version="${TAG#v}"
+          gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --draft --verify-tag --generate-notes --title "Matcha ${version//-/ }"
+
+  web:
+    needs: draft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Tag matches package.json
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          [ "$TAG" = "$version" ] || { echo "::error::tag $TAG does not match package.json $version"; exit 1; }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  pages:
+    needs: web
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  android:
+    needs: draft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Capacitor 8 compiles for Java 21
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+
+      # Android only updates an app signed with the same key. With the ANDROID_DEBUG_KEYSTORE secret (a
+      # debug.keystore, base64) every release is signed alike and installs over the last one; without it
+      # the runner makes a key of its own and people have to uninstall first.
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then
+            mkdir -p ~/.android && echo "$KEYSTORE" | base64 -d > ~/.android/debug.keystore
+          else
+            echo "::warning::ANDROID_DEBUG_KEYSTORE is not set: this APK is signed with a throwaway key and will not install over an earlier release"
+          fi
+
+      - run: ./gradlew assembleDebug
+        working-directory: android
+      # one name for every release, so releases/latest/download/matcha.apk always works
+      - name: Attach to the release
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk matcha.apk
+          gh release upload "$TAG" matcha.apk --clobber
+
+  publish:
+    needs: [pages, android]
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh release edit "$TAG" --draft=false
