@@ -253,7 +253,8 @@ dialog.sheet:not([open])::backdrop {
   100% { translate: 0 0; scale: 1; }
 }
 .hoppy:hover .hop,
-.hoppy[aria-pressed="true"] .hop {
+.hoppy[aria-pressed="true"] .hop,
+.hoppy[aria-checked="true"] .hop {
   animation: hop 0.5s cubic-bezier(0.3, 0.7, 0.4, 1.4);
 }
 

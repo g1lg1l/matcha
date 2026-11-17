@@ -1,4 +1,5 @@
-import { Emoji, Icon } from './icons'
+import { EmojiPicker } from './EmojiPicker'
+import { Icon } from './icons'
 import { useEffect, useState } from 'react'
 import { prune, started, type Tournament } from './engine'
 import { setLang, useLang } from './i18n'
@@ -10,7 +11,6 @@ import { go } from './router'
 import { PartyEditor, PointsEditor } from './Scoring'
 import type { Source } from './TournamentPage'
 import { btn, danger, field, ghost, outline, Segmented, shareLink, Sheet, toast, Toggle } from './ui'
-import { EMOJIS } from './view'
 
 export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }: { source: Source; onClose: () => void; onShare: () => void; onPublish: () => Promise<void>; onRemove: () => void }) {
   const { t, lang } = useLang()
@@ -39,17 +39,8 @@ export function SettingsSheet({ source, onClose, onShare, onPublish, onRemove }:
               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
               className={`${field} font-display font-semibold`}
             />
-            <div className="no-scrollbar -mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5">
-              {EMOJIS.map((e) => (
-                <button
-                  key={e}
-                  onClick={() => save({ ...tour, emoji: e })}
-                  aria-pressed={tour.emoji === e}
-                  className={`hoppy grid size-10 shrink-0 place-items-center rounded-xl text-[22px] transition active:scale-90 ${tour.emoji === e ? 'bg-c-mint ring-2 ring-brand' : 'bg-raised'}`}
-                >
-                  <Emoji e={e} className="hop" label={e} />
-                </button>
-              ))}
+            <div className="mt-1.5">
+              <EmojiPicker compact value={tour.emoji} onChange={(emoji) => save({ ...tour, emoji })} label={t('emoji')} />
             </div>
           </section>
         )}

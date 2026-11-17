@@ -100,6 +100,8 @@ export const emojiClass = (e: string): string | undefined => fluent[e.replace(/ï
  */
 export function Emoji({ e, className = '', label, style }: { e: string; className?: string; label?: string; style?: CSSProperties }) {
   const c = emojiClass(e)
+  // the black pawn would vanish on the dark theme: make it a white one there
+  const dark = e.startsWith('â™Ÿ') ? 'dark:invert' : ''
   if (!c) return <span className={`inline-block leading-none ${className}`} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} style={style}>{e}</span>
-  return <span role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} className={`${c} inline-block shrink-0 align-[-0.15em] ${className}`} style={style} />
+  return <span role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} className={`${c} inline-block shrink-0 align-[-0.15em] ${dark} ${className}`} style={style} />
 }

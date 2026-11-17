@@ -1,3 +1,4 @@
+import { EmojiPicker } from './EmojiPicker'
 import { Emoji, Icon } from './icons'
 import { useState, type ReactNode } from 'react'
 import { MIN_PLAYERS, type Format, type Options, type Player, type Tournament } from './engine'
@@ -8,7 +9,7 @@ import { PartyEditor, PointsEditor } from './Scoring'
 import { go } from './router'
 import { rememberOnline, saveLocal } from './store'
 import { btn, field, iconBtn, toast, Toggle } from './ui'
-import { EMOJIS, formatEmoji, newTournament } from './view'
+import { formatEmoji, newTournament } from './view'
 
 const DRAFT = 'matcha:draft'
 type Draft = { name: string; emoji: string; format: Format; options: Options; players: Player[]; where: 'local' | 'online' }
@@ -89,19 +90,8 @@ export function Create() {
           placeholder={t('namePlaceholder')}
           className={`${field} font-display text-lg font-semibold`}
         />
-        <div className="no-scrollbar -mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5">
-          {EMOJIS.map((e) => (
-            <button
-              key={e}
-              onClick={() => update({ emoji: e })}
-              aria-pressed={d.emoji === e}
-              className={`hoppy grid size-11 shrink-0 place-items-center rounded-2xl text-[24px] transition active:scale-90 ${
-                d.emoji === e ? 'bg-c-mint ring-2 ring-brand' : 'bg-sheet hover:bg-raised'
-              }`}
-            >
-              <Emoji e={e} className="hop" label={e} />
-            </button>
-          ))}
+        <div className="mt-1.5">
+          <EmojiPicker value={d.emoji} onChange={(emoji) => update({ emoji })} label={t('emoji')} />
         </div>
       </Section>
 
