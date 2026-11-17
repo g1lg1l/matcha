@@ -1,11 +1,9 @@
 import type { CSSProperties } from 'react'
 
 // Icons from Iconify, bundled at build time by @iconify/tailwind4 (so they work offline and in the apps).
-// UI icons are Pixelarticons, drawn on a 24px pixel grid; pictures (trophies, medals, sports) are Fluent Emoji
-// Flat shrunk to 16x16 pixel sprites by scripts/pixel-emoji.mjs (src/pixels.json), so they look the same on
-// every phone instead of each system's own emoji font.
+// Everything is a real icon, never an emoji: Pixelarticons and Streamline Pixel for the pixel-art look, and
+// Material Design Icons for the sports no pixel set draws. Medals are drawn here, as pixel badges.
 // Class names must stay literal strings here: Tailwind only generates the icons it can find in the source.
-import pixels from './pixels.json'
 
 const ui = {
   add: 'icon-[pixelarticons--plus]',
@@ -50,66 +48,73 @@ export function Icon({ name, size = 20, className = '', label }: { name: IconNam
 // a 24-grid icon is crisp at 24 and 48; small ones go to 18 (three quarters) rather than blur at 20
 const px = (size: number) => (size >= 21 ? Math.round(size / 24) * 24 || 24 : size >= 16 ? 18 : size)
 
-// The Fluent Emoji Flat picture behind each sprite: scripts/pixel-emoji.mjs reads this list.
-export const fluent: Record<string, string> = {
-  '🏆': 'trophy',
-  '🥇': '1st-place-medal',
-  '🥈': '2nd-place-medal',
-  '🥉': '3rd-place-medal',
-  '👑': 'crown',
-  '⚽': 'soccer-ball',
-  '🏀': 'basketball',
-  '🎾': 'tennis',
-  '🏓': 'ping-pong',
-  '🏸': 'badminton',
-  '🏐': 'volleyball',
-  '🥊': 'boxing-glove',
-  '🎳': 'bowling',
-  '🎱': 'pool-8-ball',
-  '⛳': 'flag-in-hole',
-  '🎯': 'bullseye',
-  '🏎': 'racing-car',
-  '🎮': 'video-game',
-  '🎲': 'game-die',
-  '♟': 'chess-pawn',
-  '🃏': 'joker',
-  '🧩': 'puzzle-piece',
-  '🍵': 'teacup-without-handle',
-  '⚔': 'crossed-swords',
-  '💕': 'two-hearts',
-  '🎡': 'ferris-wheel',
-  '📱': 'mobile-phone',
-  '☁': 'cloud',
-  '🤝': 'handshake',
-  '🎉': 'party-popper',
-  '🎊': 'confetti-ball',
-  '✨': 'sparkles',
-  '🌟': 'glowing-star',
-  '🌱': 'seedling',
-  '🎈': 'balloon',
-  '🥳': 'partying-face',
-  '🍂': 'fallen-leaf',
-  '👀': 'eyes',
-  '👆': 'backhand-index-pointing-up',
-  '🫖': 'teapot',
-  '💤': 'zzz',
-  '🔀': 'shuffle-tracks-button',
-  '📈': 'chart-increasing',
+// Pictures, keyed by the emoji a tournament stores (its picture, its format, little decorations).
+// The keys are only names: what shows is the icon, in its own colour.
+const GOLD = '#ffc83d'
+const LIME = '#c6f24e'
+const WHITE = '#f2f2f2'
+const RED = '#ff5a4f'
+const ORANGE = '#ff8a3d'
+const SKY = '#5cc8ff'
+const PINK = '#ff6fae'
+const pictures: Record<string, [string, string]> = {
+  '🏆': ['icon-[streamline-pixel--interface-essential-trophy]', GOLD],
+  '👑': ['icon-[pixelarticons--crown]', GOLD],
+  '⚽': ['icon-[mdi--soccer]', WHITE],
+  '🏀': ['icon-[mdi--basketball]', ORANGE],
+  '🎾': ['icon-[mdi--tennis-ball]', LIME],
+  '🏓': ['icon-[mdi--table-tennis]', RED],
+  '🏸': ['icon-[mdi--badminton]', WHITE],
+  '🏐': ['icon-[mdi--volleyball]', GOLD],
+  '🥊': ['icon-[mdi--boxing-glove]', RED],
+  '🎳': ['icon-[mdi--bowling]', WHITE],
+  '🎱': ['icon-[streamline-pixel--entertainment-events-hobbies-game-pool-snooker-ball]', WHITE],
+  '⛳': ['icon-[mdi--golf]', LIME],
+  '🎯': ['icon-[pixelarticons--bullseye]', RED],
+  '🏎': ['icon-[pixelarticons--car]', RED],
+  '🎮': ['icon-[pixelarticons--gamepad]', SKY],
+  '🎲': ['icon-[pixelarticons--dice]', WHITE],
+  '♟': ['icon-[streamline-pixel--entertainment-events-hobbies-chess-pawn]', WHITE],
+  '🃏': ['icon-[streamline-pixel--entertainment-events-hobbies-card-game-card-club]', WHITE],
+  '🧩': ['icon-[mdi--puzzle]', LIME],
+  '🍵': ['icon-[pixelarticons--tea]', LIME],
+  '⚔': ['icon-[pixelarticons--sword]', WHITE],
+  '💕': ['icon-[pixelarticons--heart]', PINK],
+  '🎡': ['icon-[pixelarticons--reload]', SKY],
+  '📱': ['icon-[pixelarticons--device-phone]', WHITE],
+  '☁': ['icon-[pixelarticons--cloud]', SKY],
+  '🤝': ['icon-[streamline-pixel--business-products-deal-handshake]', GOLD],
+  '🎉': ['icon-[pixelarticons--party-popper]', PINK],
+  '🎊': ['icon-[pixelarticons--sparkles]', GOLD],
+  '✨': ['icon-[pixelarticons--sparkle]', GOLD],
+  '🌟': ['icon-[pixelarticons--star]', GOLD],
+  '🌱': ['icon-[streamline-pixel--ecology-growth-plant]', LIME],
+  '🎈': ['icon-[pixelarticons--balloon]', RED],
+  '🥳': ['icon-[pixelarticons--mood-happy]', GOLD],
+  '🍂': ['icon-[pixelarticons--leaf]', ORANGE],
+  '👀': ['icon-[pixelarticons--eye]', WHITE],
+  '👆': ['icon-[streamline-pixel--hand-point]', WHITE],
+  '🫖': ['icon-[pixelarticons--tea]', LIME],
+  '💤': ['icon-[pixelarticons--moon-stars]', SKY],
+  '🔀': ['icon-[pixelarticons--shuffle]', SKY],
+  '📈': ['icon-[pixelarticons--chart-line]', LIME],
 }
+const medals: Record<string, [number, string]> = { '🥇': [1, GOLD], '🥈': [2, '#cfd6dd'], '🥉': [3, '#e0894a'] }
 
-const sprites: Record<string, string> = pixels
+const key = (e: string) => e.replace(/\uFE0F/g, '')
+/** The icon class and colour for a picture key; unknown ones (an old tournament, say) get the trophy. */
+export const pictureOf = (e: string): [string, string] => pictures[key(e)] ?? pictures['🏆']
 
-/** The pixel sprite (a PNG data URL) for an emoji, if we have it. Variation selectors don't matter. */
-export const spriteOf = (e: string): string | undefined => sprites[e.replace(/️/g, '')]
-
-/**
- * An emoji drawn as a pixel sprite, 1em wide so it sizes like text. Unknown emoji (an old tournament,
- * say) fall back to the system font.
- */
+/** A picture as an icon, 1em wide so it sizes like text. Decorative unless it gets a label. */
 export function Emoji({ e, className = '', label, style }: { e: string; className?: string; label?: string; style?: CSSProperties }) {
-  const src = spriteOf(e)
-  if (!src) return <span className={`inline-block leading-none ${className}`} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} style={style}>{e}</span>
-  // the black pawn would vanish on the black ground: make it a white one
-  const invert = e.startsWith('♟') ? 'invert' : ''
-  return <img src={src} alt={label ?? ''} aria-hidden={label ? undefined : true} draggable={false} className={`sprite inline-block size-[1em] shrink-0 align-[-0.15em] ${invert} ${className}`} style={style} />
+  const a11y = { role: label ? 'img' : undefined, 'aria-label': label, 'aria-hidden': label ? undefined : true }
+  const medal = medals[key(e)]
+  if (medal)
+    return (
+      <span {...a11y} className={`pixel inline-grid size-[1em] shrink-0 place-items-center align-[-0.15em] ${className}`} style={{ background: medal[1], ...style }}>
+        <span className="font-display text-[0.6em] leading-none text-black">{medal[0]}</span>
+      </span>
+    )
+  const [cls, color] = pictureOf(e)
+  return <span {...a11y} className={`${cls} inline-block size-[1em] shrink-0 align-[-0.15em] ${className}`} style={{ color, ...style }} />
 }

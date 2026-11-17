@@ -2,7 +2,7 @@
 import { Capacitor } from '@capacitor/core'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { t } from './i18n'
-import { Icon, spriteOf } from './icons'
+import { Icon, pictureOf } from './icons'
 
 export const fieldBare = 'w-full rounded-xl border border-line px-3.5 py-2.5 placeholder:text-mute/80 focus:border-brand focus:outline-none'
 export const field = `${fieldBare} bg-raised text-[15px]`
@@ -106,7 +106,7 @@ export function Toaster() {
   )
 }
 
-// A little emoji confetti pop at (x, y), drawn in the top layer above everything.
+// A little confetti pop of pixel icons at (x, y), drawn in the top layer above everything.
 export function burst(x: number, y: number, emoji: string, count = 14) {
   if (reducedMotion()) return
   const host = document.createElement('div')
@@ -115,13 +115,10 @@ export function burst(x: number, y: number, emoji: string, count = 14) {
   host.style.left = `${x}px`
   host.style.top = `${y}px`
   for (let i = 0; i < count; i++) {
-    const e = i % 3 ? emoji : '✨'
-    const src = spriteOf(e)
-    const s = document.createElement(src ? 'img' : 'span')
-    if (s instanceof HTMLImageElement && src) {
-      s.src = src
-      s.className = 'sprite'
-    } else s.textContent = e
+    const [cls, color] = pictureOf(i % 3 ? emoji : '✨')
+    const s = document.createElement('span')
+    s.className = cls
+    s.style.color = color
     const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4
     const dist = 50 + Math.random() * (count > 14 ? 140 : 70)
     s.style.setProperty('--x', `${Math.cos(angle) * dist}px`)

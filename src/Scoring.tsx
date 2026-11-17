@@ -76,7 +76,7 @@ export function PointsEditor({ value = POINTS, onChange }: { value?: Points; onC
   return (
     <div>
       <Label>{t('pointsSystem')}</Label>
-      <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4">
+      <div className="flex flex-wrap gap-1.5">
         {POINT_PRESETS.map((p, i) => (
           <button key={i} type="button" onClick={() => onChange(p)} aria-pressed={preset === i} className={chip(preset === i)}>
             {[p.win, p.draw, p.loss].map(num).join(' · ')}
@@ -139,7 +139,7 @@ export function PartyEditor({ value, onChange, minRounds = 1 }: { value: Partial
 
       <div>
         <Label>{t('placePoints')}</Label>
-        <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4">
+        <div className="flex flex-wrap gap-1.5">
           {PLACE_PRESETS.map((p, i) => (
             <button key={i} type="button" onClick={() => set({ places: Array.from({ length: places.length }, (_, k) => p[k] ?? 0) })} aria-pressed={preset === i} className={chip(preset === i)}>
               {p.slice(0, places.length).map(num).join(' · ')}
@@ -150,7 +150,10 @@ export function PartyEditor({ value, onChange, minRounds = 1 }: { value: Partial
         <div className="mt-3 grid grid-cols-4 gap-2">
           {places.map((v, i) => (
             <label key={i} className="grid gap-1 text-center text-xs font-semibold text-mute">
-              {i < 3 ? <Emoji e={['🥇', '🥈', '🥉'][i]} className="mx-auto text-xl" label={t('placeN', { n: i + 1 })} /> : t('placeN', { n: i + 1 })}
+              {/* one fixed-height slot, so the medal rows and the "4°" rows line up */}
+              <span className="grid h-6 place-items-center">
+                {i < 3 ? <Emoji e={['🥇', '🥈', '🥉'][i]} className="text-xl" label={t('placeN', { n: i + 1 })} /> : t('placeN', { n: i + 1 })}
+              </span>
               <NumberField value={v} label={t('placeN', { n: i + 1 })} onChange={(n) => set({ places: places.map((x, k) => (k === i ? n : x)) })} />
             </label>
           ))}
