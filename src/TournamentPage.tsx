@@ -116,7 +116,7 @@ export function OnlineTournament({ code, referee }: { code: string; referee?: st
 export function RoleBadge({ role }: { role: Role }) {
   const { t } = useLang()
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2 py-0.5 text-xs font-semibold">
+    <span className="inline-flex items-center gap-1 pixel bg-raised px-2 py-0.5 text-xs font-semibold">
       <Icon name={role === 'owner' ? 'cloud' : role === 'editor' ? 'flag' : 'eye'} size={13} />
       {role === 'owner' ? t('onlineBadge') : role === 'editor' ? t('referee') : t('viewing')}
     </span>
@@ -276,8 +276,8 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   const pct = Math.round((done / total) * 100)
   return (
     <div className="mt-4 flex items-center gap-3" role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={total} aria-label={t('progress', { done, total })}>
-      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-well">
-        <div className="h-full rounded-full bg-brand transition-[width] duration-500 ease-out" style={{ width: `${Math.max(pct, done ? 4 : 0)}%` }} />
+      <div className="h-2.5 flex-1 overflow-hidden rounded-none bg-well">
+        <div className="h-full rounded-none bg-brand transition-[width] duration-500 ease-out" style={{ width: `${Math.max(pct, done ? 4 : 0)}%` }} />
       </div>
       <span className="shrink-0 text-xs font-semibold text-mute tabular-nums">{t('progress', { done, total })}</span>
     </div>
@@ -304,7 +304,7 @@ function ChampionBanner({ name, id }: { name: string; id: string }) {
     return () => clearTimeout(timer)
   }, [id, name])
   return (
-    <button ref={ref} onClick={party} className="pop mt-5 flex w-full items-center gap-4 rounded-[22px] bg-c-lemon p-4 text-left active:scale-[0.99]">
+    <button ref={ref} onClick={party} className="pop mt-5 flex w-full items-center gap-4 rounded-[10px] bg-c-lemon p-4 text-left active:scale-[0.99]">
       <Emoji e="🏆" className="wobble text-[52px]" />
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-mute">{t('champion')}</span>

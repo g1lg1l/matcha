@@ -1,33 +1,35 @@
 import type { CSSProperties } from 'react'
 
 // Icons from Iconify, bundled at build time by @iconify/tailwind4 (so they work offline and in the apps).
-// UI icons are Solar's two-tone set; pictures (trophies, medals, sports) are Fluent Emoji Flat, so they
-// look the same on every phone instead of each system's own emoji font.
+// UI icons are Pixelarticons, drawn on a 24px pixel grid; pictures (trophies, medals, sports) are Fluent Emoji
+// Flat shrunk to 16x16 pixel sprites by scripts/pixel-emoji.mjs (src/pixels.json), so they look the same on
+// every phone instead of each system's own emoji font.
 // Class names must stay literal strings here: Tailwind only generates the icons it can find in the source.
+import pixels from './pixels.json'
 
 const ui = {
-  add: 'icon-[solar--add-bold]',
-  minus: 'icon-[solar--minus-bold]',
-  close: 'icon-[solar--close-bold]',
-  crown: 'icon-[solar--crown-bold-duotone]',
-  cloud: 'icon-[solar--cloud-bold-duotone]',
-  offline: 'icon-[solar--cloud-cross-bold-duotone]',
-  share: 'icon-[solar--share-bold-duotone]',
-  iosShare: 'icon-[solar--square-share-line-bold-duotone]',
-  flag: 'icon-[solar--flag-bold-duotone]',
-  check: 'icon-[solar--check-circle-bold]',
-  back: 'icon-[solar--round-arrow-left-bold-duotone]',
-  next: 'icon-[solar--alt-arrow-right-bold]',
-  up: 'icon-[solar--round-alt-arrow-up-bold-duotone]',
-  down: 'icon-[solar--round-alt-arrow-down-bold-duotone]',
-  stars: 'icon-[solar--stars-bold-duotone]',
-  phone: 'icon-[solar--smartphone-bold-duotone]',
-  shuffle: 'icon-[solar--shuffle-bold-duotone]',
-  settings: 'icon-[solar--settings-bold-duotone]',
-  restart: 'icon-[solar--restart-bold-duotone]',
-  link: 'icon-[solar--link-round-bold-duotone]',
-  eye: 'icon-[solar--eye-bold-duotone]',
-  copy: 'icon-[solar--copy-bold-duotone]',
+  add: 'icon-[pixelarticons--plus]',
+  minus: 'icon-[pixelarticons--minus]',
+  close: 'icon-[pixelarticons--close]',
+  crown: 'icon-[pixelarticons--crown]',
+  cloud: 'icon-[pixelarticons--cloud]',
+  offline: 'icon-[pixelarticons--cloud-moon]',
+  share: 'icon-[pixelarticons--share]',
+  iosShare: 'icon-[pixelarticons--upload]',
+  flag: 'icon-[pixelarticons--flag]',
+  check: 'icon-[pixelarticons--check]',
+  back: 'icon-[pixelarticons--arrow-left]',
+  next: 'icon-[pixelarticons--chevron-right]',
+  up: 'icon-[pixelarticons--chevron-up]',
+  down: 'icon-[pixelarticons--chevron-down]',
+  stars: 'icon-[pixelarticons--sparkles]',
+  phone: 'icon-[pixelarticons--device-phone]',
+  shuffle: 'icon-[pixelarticons--shuffle]',
+  settings: 'icon-[pixelarticons--settings-cog]',
+  restart: 'icon-[pixelarticons--reload]',
+  link: 'icon-[pixelarticons--link]',
+  eye: 'icon-[pixelarticons--eye]',
+  copy: 'icon-[pixelarticons--copy]',
 } as const
 
 export type IconName = keyof typeof ui
@@ -40,68 +42,74 @@ export function Icon({ name, size = 20, className = '', label }: { name: IconNam
       aria-label={label}
       aria-hidden={label ? undefined : true}
       className={`${ui[name]} shrink-0 ${className}`}
-      style={{ width: size, height: size }}
+      style={{ width: px(size), height: px(size) }}
     />
   )
 }
 
-const fluent: Record<string, string> = {
-  '🏆': 'icon-[fluent-emoji-flat--trophy]',
-  '🥇': 'icon-[fluent-emoji-flat--1st-place-medal]',
-  '🥈': 'icon-[fluent-emoji-flat--2nd-place-medal]',
-  '🥉': 'icon-[fluent-emoji-flat--3rd-place-medal]',
-  '👑': 'icon-[fluent-emoji-flat--crown]',
-  '⚽': 'icon-[fluent-emoji-flat--soccer-ball]',
-  '🏀': 'icon-[fluent-emoji-flat--basketball]',
-  '🎾': 'icon-[fluent-emoji-flat--tennis]',
-  '🏓': 'icon-[fluent-emoji-flat--ping-pong]',
-  '🏸': 'icon-[fluent-emoji-flat--badminton]',
-  '🏐': 'icon-[fluent-emoji-flat--volleyball]',
-  '🥊': 'icon-[fluent-emoji-flat--boxing-glove]',
-  '🎳': 'icon-[fluent-emoji-flat--bowling]',
-  '🎱': 'icon-[fluent-emoji-flat--pool-8-ball]',
-  '⛳': 'icon-[fluent-emoji-flat--flag-in-hole]',
-  '🎯': 'icon-[fluent-emoji-flat--bullseye]',
-  '🏎': 'icon-[fluent-emoji-flat--racing-car]',
-  '🎮': 'icon-[fluent-emoji-flat--video-game]',
-  '🎲': 'icon-[fluent-emoji-flat--game-die]',
-  '♟': 'icon-[fluent-emoji-flat--chess-pawn]',
-  '🃏': 'icon-[fluent-emoji-flat--joker]',
-  '🧩': 'icon-[fluent-emoji-flat--puzzle-piece]',
-  '🍵': 'icon-[fluent-emoji-flat--teacup-without-handle]',
-  '⚔': 'icon-[fluent-emoji-flat--crossed-swords]',
-  '💕': 'icon-[fluent-emoji-flat--two-hearts]',
-  '🎡': 'icon-[fluent-emoji-flat--ferris-wheel]',
-  '📱': 'icon-[fluent-emoji-flat--mobile-phone]',
-  '☁': 'icon-[fluent-emoji-flat--cloud]',
-  '🤝': 'icon-[fluent-emoji-flat--handshake]',
-  '🎉': 'icon-[fluent-emoji-flat--party-popper]',
-  '🎊': 'icon-[fluent-emoji-flat--confetti-ball]',
-  '✨': 'icon-[fluent-emoji-flat--sparkles]',
-  '🌟': 'icon-[fluent-emoji-flat--glowing-star]',
-  '🌱': 'icon-[fluent-emoji-flat--seedling]',
-  '🎈': 'icon-[fluent-emoji-flat--balloon]',
-  '🥳': 'icon-[fluent-emoji-flat--partying-face]',
-  '🍂': 'icon-[fluent-emoji-flat--fallen-leaf]',
-  '👀': 'icon-[fluent-emoji-flat--eyes]',
-  '👆': 'icon-[fluent-emoji-flat--backhand-index-pointing-up]',
-  '🫖': 'icon-[fluent-emoji-flat--teapot]',
-  '💤': 'icon-[fluent-emoji-flat--zzz]',
-  '🔀': 'icon-[fluent-emoji-flat--shuffle-tracks-button]',
-  '📈': 'icon-[fluent-emoji-flat--chart-increasing]',
+// a 24-grid icon is crisp at 24 and 48; small ones go to 18 (three quarters) rather than blur at 20
+const px = (size: number) => (size >= 21 ? Math.round(size / 24) * 24 || 24 : size >= 16 ? 18 : size)
+
+// The Fluent Emoji Flat picture behind each sprite: scripts/pixel-emoji.mjs reads this list.
+export const fluent: Record<string, string> = {
+  '🏆': 'trophy',
+  '🥇': '1st-place-medal',
+  '🥈': '2nd-place-medal',
+  '🥉': '3rd-place-medal',
+  '👑': 'crown',
+  '⚽': 'soccer-ball',
+  '🏀': 'basketball',
+  '🎾': 'tennis',
+  '🏓': 'ping-pong',
+  '🏸': 'badminton',
+  '🏐': 'volleyball',
+  '🥊': 'boxing-glove',
+  '🎳': 'bowling',
+  '🎱': 'pool-8-ball',
+  '⛳': 'flag-in-hole',
+  '🎯': 'bullseye',
+  '🏎': 'racing-car',
+  '🎮': 'video-game',
+  '🎲': 'game-die',
+  '♟': 'chess-pawn',
+  '🃏': 'joker',
+  '🧩': 'puzzle-piece',
+  '🍵': 'teacup-without-handle',
+  '⚔': 'crossed-swords',
+  '💕': 'two-hearts',
+  '🎡': 'ferris-wheel',
+  '📱': 'mobile-phone',
+  '☁': 'cloud',
+  '🤝': 'handshake',
+  '🎉': 'party-popper',
+  '🎊': 'confetti-ball',
+  '✨': 'sparkles',
+  '🌟': 'glowing-star',
+  '🌱': 'seedling',
+  '🎈': 'balloon',
+  '🥳': 'partying-face',
+  '🍂': 'fallen-leaf',
+  '👀': 'eyes',
+  '👆': 'backhand-index-pointing-up',
+  '🫖': 'teapot',
+  '💤': 'zzz',
+  '🔀': 'shuffle-tracks-button',
+  '📈': 'chart-increasing',
 }
 
-/** The Fluent class for an emoji, if we have it. Variation selectors don't matter. */
-export const emojiClass = (e: string): string | undefined => fluent[e.replace(/️/g, '')]
+const sprites: Record<string, string> = pixels
+
+/** The pixel sprite (a PNG data URL) for an emoji, if we have it. Variation selectors don't matter. */
+export const spriteOf = (e: string): string | undefined => sprites[e.replace(/️/g, '')]
 
 /**
- * An emoji drawn as a Fluent picture, 1em wide so it sizes like text. Unknown emoji (an old tournament,
+ * An emoji drawn as a pixel sprite, 1em wide so it sizes like text. Unknown emoji (an old tournament,
  * say) fall back to the system font.
  */
 export function Emoji({ e, className = '', label, style }: { e: string; className?: string; label?: string; style?: CSSProperties }) {
-  const c = emojiClass(e)
-  // the black pawn would vanish on the dark theme: make it a white one there
-  const dark = e.startsWith('♟') ? 'dark:invert' : ''
-  if (!c) return <span className={`inline-block leading-none ${className}`} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} style={style}>{e}</span>
-  return <span role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} className={`${c} inline-block shrink-0 align-[-0.15em] ${dark} ${className}`} style={style} />
+  const src = spriteOf(e)
+  if (!src) return <span className={`inline-block leading-none ${className}`} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} style={style}>{e}</span>
+  // the black pawn would vanish on the black ground: make it a white one
+  const invert = e.startsWith('♟') ? 'invert' : ''
+  return <img src={src} alt={label ?? ''} aria-hidden={label ? undefined : true} draggable={false} className={`sprite inline-block size-[1em] shrink-0 align-[-0.15em] ${invert} ${className}`} style={style} />
 }

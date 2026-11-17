@@ -1,56 +1,30 @@
 @import "tailwindcss";
 @plugin "@iconify/tailwind4";
 
-/* Midori's palette, steeped a little more towards matcha */
+/* Night arcade: true black, elevation by lightness alone, one matcha lime on data and the main action */
 :root {
-  --paper: #eef2e5;
-  --well: #e3e9d8;
-  --sheet: #ffffff;
-  --raised: #f5f7ef;
-  --ink: #1b2a14;
-  --mute: #5f6e55;
-  --line: #d6ddc9;
-  --primary: #2d4a1e;
-  --on-primary: #f4f8ec;
-  --brand: #6a9a2c;
-  --marker: #ffe27a;
-  --on-marker: #3a2f00;
-  --danger: #b5371f;
-  --gold: #e9b425;
-  /* tints */
-  --c-mint: #dcecc9;
-  --c-sky: #d5e6f4;
-  --c-peach: #fadfcb;
-  --c-lilac: #e4dbf7;
-  --c-lemon: #f4eab8;
-  --c-rose: #f7d8e0;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #12180e;
-    --well: #182013;
-    --sheet: #1e2818;
-    --raised: #26321e;
-    --ink: #e6eddc;
-    --mute: #9aa98c;
-    --line: #2f3d26;
-    --primary: #b5d77a;
-    --on-primary: #16220e;
-    --brand: #b5d77a;
-    --marker: #5a4a10;
-    --on-marker: #ffe89a;
-    --danger: #f08a73;
-    --gold: #f2c94c;
-    --c-mint: #1f3320;
-    --c-sky: #172b3b;
-    --c-peach: #3a281b;
-    --c-lilac: #2a2340;
-    --c-lemon: #34301a;
-    --c-rose: #3a2029;
-    color-scheme: dark;
-  }
+  --paper: #000000;
+  --well: #161616;
+  --sheet: #111111;
+  --raised: #1d1d1d;
+  --ink: #ffffff;
+  --mute: #b4b4b4;
+  --line: #2a2a2a;
+  --primary: #c6f24e;
+  --on-primary: #0d1300;
+  --brand: #c6f24e;
+  --marker: #26300d;
+  --on-marker: #e2ff94;
+  --danger: #ff6b5e;
+  --gold: #ffc83d;
+  /* quiet tints, one lightness step off the cards */
+  --c-mint: #1b240a;
+  --c-sky: #141b22;
+  --c-peach: #24170f;
+  --c-lilac: #1b1b1b;
+  --c-lemon: #221e0b;
+  --c-rose: #231318;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -74,8 +48,22 @@
   --color-c-lilac: var(--c-lilac);
   --color-c-lemon: var(--c-lemon);
   --color-c-rose: var(--c-rose);
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Unbounded", "Figtree", ui-sans-serif, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Pixelify Sans", "Inter", ui-sans-serif, sans-serif;
+  /* tight corners, so the pixel-notched buttons and the cards speak the same language */
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 8px;
+  --radius-3xl: 10px;
+}
+
+/* pixel corners: one 4px step cut from each corner, like a sprite */
+@utility pixel {
+  border-radius: 0;
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+  &:focus-visible {
+    clip-path: none;
+  }
 }
 
 @utility no-scrollbar {
@@ -92,6 +80,9 @@
   :focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
+  }
+  img.sprite {
+    image-rendering: pixelated;
   }
   button:not(:disabled) {
     cursor: pointer;
@@ -114,7 +105,7 @@ dialog.sheet:not([open]) {
   translate: 0 100%;
 }
 dialog.sheet::backdrop {
-  background: rgb(6 18 12 / 0.5);
+  background: rgb(0 0 0 / 0.72);
   transition:
     opacity 0.25s,
     display 0.3s allow-discrete,
@@ -186,7 +177,7 @@ dialog.sheet:not([open])::backdrop {
   overflow: visible;
   pointer-events: none;
 }
-.burst span {
+.burst img {
   display: block;
   width: 1em;
   height: 1em;
@@ -263,4 +254,9 @@ dialog.sheet:not([open])::backdrop {
   rotate: -12deg;
   scale: 1.15;
   transition: rotate 0.1s, scale 0.1s;
+}
+
+/* Pixelify's "fi" ligature reads as "A" */
+.font-display {
+  font-variant-ligatures: none;
 }

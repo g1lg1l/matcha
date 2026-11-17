@@ -92,8 +92,8 @@ function Card({ entry }: { entry: Entry }) {
           )}
         </span>
         {phase === 'live' && (
-          <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-well" aria-hidden>
-            <span className="block h-full rounded-full bg-brand" style={{ width: `${Math.round((progress.done / Math.max(1, progress.total)) * 100)}%` }} />
+          <span className="mt-2 block h-1.5 overflow-hidden rounded-none bg-well" aria-hidden>
+            <span className="block h-full rounded-none bg-brand" style={{ width: `${Math.round((progress.done / Math.max(1, progress.total)) * 100)}%` }} />
           </span>
         )}
       </span>
@@ -191,7 +191,7 @@ const toys = [
 ]
 function Toys() {
   return (
-    <div className="mt-8 flex items-end justify-center gap-3 rounded-[28px] bg-c-mint px-4 pt-7 pb-6" aria-hidden>
+    <div className="mt-8 flex items-end justify-center gap-3 rounded-[10px] bg-c-mint px-4 pt-7 pb-6" aria-hidden>
       {toys.map((x) => (
         <Emoji key={x.e} e={x.e} className={`bob ${x.size}`} style={{ '--tilt': x.tilt, animationDelay: x.delay } as CSSProperties} />
       ))}

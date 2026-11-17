@@ -29,7 +29,7 @@ export function MatchCard({ m, ctx, label }: { m: Match; ctx: Ctx; label?: React
     const score = m.result?.[key]
     return (
       <div className={`flex min-h-9 items-center gap-2 px-3 ${lost ? 'text-mute' : ''}`}>
-        {s ? <Avatar {...who(s)} size={22} /> : <span className="size-[22px] shrink-0 rounded-full border-2 border-dashed border-line" />}
+        {s ? <Avatar {...who(s)} size={22} /> : <span className="size-[22px] shrink-0 pixel border-2 border-dashed border-line" />}
         <span className={`min-w-0 flex-1 truncate text-[15px] ${won ? 'font-bold' : s ? 'font-medium' : 'text-mute italic'}`}>
           {s ? who(s).name : s === null ? t('bye') : t('tbd')}
         </span>
@@ -48,7 +48,7 @@ export function MatchCard({ m, ctx, label }: { m: Match; ctx: Ctx; label?: React
       </div>
     </>
   )
-  const base = `relative block w-full overflow-hidden rounded-2xl bg-sheet text-left shadow-[0_1px_0_var(--line)] ${
+  const base = `relative block w-full overflow-hidden rounded-2xl bg-sheet text-left ${
     m.status === 'ready' ? 'border-l-4 border-brand' : m.status === 'bye' ? 'opacity-45' : ''
   }`
   return clickable ? (
@@ -78,7 +78,7 @@ interface Col {
 function Panel({ cols, tint, ctx }: { cols: Col[]; tint: string; ctx: Ctx }) {
   return (
     <div className="no-scrollbar -mx-5 overflow-x-auto px-5 pb-2">
-      <div className={`inline-flex min-w-full rounded-[24px] p-3 sm:p-4 ${tint}`}>
+      <div className={`inline-flex min-w-full rounded-[10px] p-3 sm:p-4 ${tint}`}>
         {cols.map((col, i) => {
           const next = cols[i + 1]
           const linksOut = !!next && !next.loose && !col.loose
@@ -185,7 +185,7 @@ export function MatchList({ ctx }: { ctx: Ctx }) {
     (ms.length > 0 || empty) && (
       <section>
         <h3 className="mb-2.5 text-sm font-semibold text-mute">
-          {title} {ms.length > 0 && <span className="ml-1 rounded-full bg-well px-2 py-0.5 text-xs">{ms.length}</span>}
+          {title} {ms.length > 0 && <span className="ml-1 pixel bg-well px-2 py-0.5 text-xs">{ms.length}</span>}
         </h3>
         {ms.length ? (
           <div className="grid gap-2 sm:grid-cols-2">
@@ -268,7 +268,7 @@ export function Standings({ ctx }: { ctx: Ctx }) {
           <span className="w-7 text-center text-sm text-mute">•</span>
           <Avatar {...who(p.id)} />
           <span className="flex-1 truncate font-medium">{p.name}</span>
-          <span className="rounded-full bg-c-mint px-2.5 py-0.5 text-xs font-semibold">{t('inProgress')}</span>
+          <span className="pixel bg-c-mint px-2.5 py-0.5 text-xs font-semibold">{t('inProgress')}</span>
         </li>
       ))}
       {out.map((p) => {

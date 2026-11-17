@@ -9,7 +9,7 @@ import { Segmented, Toggle } from './ui'
 import { num } from './view'
 
 const chip = (on: boolean) =>
-  `h-9 shrink-0 rounded-full px-3.5 text-sm font-semibold tabular-nums transition active:scale-95 ${on ? 'bg-primary text-on-primary' : 'bg-raised text-mute hover:text-ink'}`
+  `h-9 shrink-0 pixel px-3.5 text-sm font-semibold tabular-nums transition active:scale-95 ${on ? 'bg-primary text-on-primary' : 'bg-raised text-mute hover:text-ink'}`
 
 const same = (a: number[], b: number[]) => a.length === b.length && a.every((x, i) => x === b[i])
 
@@ -53,7 +53,7 @@ function NumberField({ value, onChange, label, step = 1 }: { value: number; onCh
 
 export function Counter({ value, min, max, onChange, label }: { value: number; min: number; max: number; onChange: (n: number) => void; label: string }) {
   const { t } = useLang()
-  const round = 'grid size-10 place-items-center rounded-full bg-raised text-ink transition active:scale-90 disabled:opacity-30'
+  const round = 'grid size-10 place-items-center pixel bg-raised text-ink transition active:scale-90 disabled:opacity-30'
   return (
     <div className="flex items-center gap-2" role="group" aria-label={label}>
       <button type="button" aria-label={t('less')} disabled={value <= min} onClick={() => onChange(value - 1)} className={round}>

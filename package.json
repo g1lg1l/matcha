@@ -29,7 +29,7 @@
   "devDependencies": {
     "@capacitor/cli": "^8.6.2",
     "@iconify-json/fluent-emoji-flat": "^1.2.6",
-    "@iconify-json/solar": "^1.2.16",
+    "@iconify-json/pixelarticons": "^1.2.10",
     "@iconify/tailwind4": "^1.2.3",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",

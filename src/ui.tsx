@@ -2,20 +2,20 @@
 import { Capacitor } from '@capacitor/core'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { t } from './i18n'
-import { emojiClass, Icon } from './icons'
+import { Icon, spriteOf } from './icons'
 
 export const fieldBare = 'w-full rounded-xl border border-line px-3.5 py-2.5 placeholder:text-mute/80 focus:border-brand focus:outline-none'
 export const field = `${fieldBare} bg-raised text-[15px]`
 export const pill =
-  'inline-flex items-center justify-center gap-2 rounded-full bg-primary text-on-primary font-semibold disabled:opacity-50 hover:opacity-90 active:scale-95 transition'
+  'pixel inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-display font-semibold disabled:opacity-50 hover:bg-white active:translate-y-0.5 transition'
 export const btn = `${pill} h-11 px-5`
 export const outline =
-  'inline-flex h-11 items-center justify-center gap-2 rounded-full border border-line px-5 font-semibold transition hover:bg-raised active:scale-95 disabled:opacity-50'
-const ghostBare = 'inline-flex items-center gap-1.5 rounded-full h-9 text-sm font-medium transition active:scale-95'
+  'pixel inline-flex h-11 items-center justify-center gap-2 bg-raised px-5 font-display font-semibold transition hover:bg-line active:translate-y-0.5 disabled:opacity-50'
+const ghostBare = 'inline-flex items-center gap-1.5 rounded-lg h-9 text-sm font-medium transition active:scale-95'
 export const ghost = `${ghostBare} px-3 text-mute hover:text-ink hover:bg-raised`
 export const danger = `${ghostBare} justify-self-start px-3 -mx-3 text-danger hover:opacity-75`
 export const iconBtn =
-  'inline-grid place-items-center size-9 shrink-0 rounded-full text-mute hover:text-ink hover:bg-raised active:scale-90 transition disabled:opacity-30 disabled:pointer-events-none'
+  'inline-grid place-items-center size-9 shrink-0 rounded-lg text-mute hover:text-ink hover:bg-raised active:scale-90 transition disabled:opacity-30 disabled:pointer-events-none'
 
 export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -46,7 +46,7 @@ export function Sheet({ label, header, footer, onClose, children }: { label: str
       tabIndex={-1}
       onClose={() => setTimeout(onClose, reducedMotion() ? 0 : 220)}
       onClick={(e) => e.target === e.currentTarget && close()}
-      className="sheet m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-[24px] bg-sheet p-0 text-ink outline-none open:flex open:flex-col sm:m-auto sm:max-h-[86dvh] sm:w-[min(100%-2rem,32rem)] sm:rounded-[24px]"
+      className="sheet m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-[10px] bg-sheet p-0 text-ink outline-none open:flex open:flex-col sm:m-auto sm:max-h-[86dvh] sm:w-[min(100%-2rem,32rem)] sm:rounded-[10px]"
     >
       <div className="flex shrink-0 items-center gap-1 border-b border-line py-2.5 pr-2.5 pl-5">
         <div className="min-w-0 flex-1">{header}</div>
@@ -86,7 +86,7 @@ export function Toaster() {
       ref={ref}
       popover="manual"
       role="status"
-      className="toast inset-x-0 top-[max(1rem,env(safe-area-inset-top))] bottom-auto mx-auto w-fit max-w-[calc(100%-2rem)] rounded-full border-0 bg-primary py-2.5 pr-2 pl-4 text-sm font-medium text-on-primary shadow-lg"
+      className="toast inset-x-0 top-[max(1rem,env(safe-area-inset-top))] bottom-auto pixel mx-auto w-fit max-w-[calc(100%-2rem)] border-0 bg-white py-2.5 pr-2 pl-4 text-sm font-medium text-black shadow-lg"
     >
       <span className="flex items-center gap-3 pr-2">
         {message}
@@ -96,7 +96,7 @@ export function Toaster() {
               action.run()
               ref.current?.hidePopover()
             }}
-            className="-my-1 -mr-2 rounded-full bg-on-primary/15 px-3 py-1 font-semibold transition hover:bg-on-primary/25 active:scale-95"
+            className="-my-1 -mr-2 rounded-md bg-black/10 px-3 py-1 font-semibold transition hover:bg-black/20 active:scale-95"
           >
             {action.label}
           </button>
@@ -115,11 +115,13 @@ export function burst(x: number, y: number, emoji: string, count = 14) {
   host.style.left = `${x}px`
   host.style.top = `${y}px`
   for (let i = 0; i < count; i++) {
-    const s = document.createElement('span')
     const e = i % 3 ? emoji : '✨'
-    const c = emojiClass(e)
-    if (c) s.className = c
-    else s.textContent = e
+    const src = spriteOf(e)
+    const s = document.createElement(src ? 'img' : 'span')
+    if (s instanceof HTMLImageElement && src) {
+      s.src = src
+      s.className = 'sprite'
+    } else s.textContent = e
     const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4
     const dist = 50 + Math.random() * (count > 14 ? 140 : 70)
     s.style.setProperty('--x', `${Math.cos(angle) * dist}px`)
@@ -142,7 +144,7 @@ export function Toggle({ label, hint, checked, onChange, disabled }: { label: st
       <input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
       <span
         aria-hidden
-        className="relative mt-0.5 h-6 w-10 shrink-0 rounded-full bg-line transition-colors peer-checked:bg-brand peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-4"
+        className="relative mt-0.5 h-6 w-10 shrink-0 rounded-[5px] bg-line transition-colors peer-checked:bg-brand peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-[3px] after:bg-white after:transition-transform peer-checked:after:translate-x-4"
       />
     </label>
   )
@@ -159,15 +161,15 @@ export function Splash() {
 /** Segmented control, used for tabs and either/or choices. */
 export function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; label: string }) {
   return (
-    <div role="tablist" aria-label={label} className="inline-flex rounded-full bg-well p-1">
+    <div role="tablist" aria-label={label} className="inline-flex rounded-lg bg-well p-1">
       {options.map((o) => (
         <button
           key={o.value}
           role="tab"
           aria-selected={o.value === value}
           onClick={() => onChange(o.value)}
-          className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition active:scale-95 ${
-            o.value === value ? 'bg-sheet text-ink shadow-sm' : 'text-mute hover:text-ink'
+          className={`inline-flex h-9 items-center gap-1.5 rounded-md px-4 text-sm font-semibold transition active:scale-95 ${
+            o.value === value ? 'bg-line text-ink' : 'text-mute hover:text-ink'
           }`}
         >
           {o.label}
@@ -177,7 +179,8 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   )
 }
 
-const palette = ['#d1495b', '#d9702a', '#2e86ab', '#6a4c93', '#17907f', '#c4497f', '#3d6fd8', '#6f8a1f']
+// arcade player colours: bright enough to sit on black under white initials
+const palette = ['#e5484d', '#f76b15', '#0090ff', '#a35829', '#12a594', '#d6409f', '#3e63dd', '#5c7c2f']
 export const colorOf = (key: string) => {
   let h = 0
   for (const c of key) h = (h * 31 + c.charCodeAt(0)) | 0
@@ -197,8 +200,8 @@ export function Avatar({ name, color, size = 26 }: { name: string; color: string
   return (
     <span
       aria-hidden
-      className="inline-grid shrink-0 place-items-center rounded-full font-semibold text-white select-none"
-      style={{ width: size, height: size, fontSize: size * 0.42, background: color }}
+      className="pixel inline-grid shrink-0 place-items-center font-display font-semibold text-white select-none"
+      style={{ width: size, height: size, fontSize: size * 0.46, background: color }}
     >
       {initials(name) || '?'}
     </span>

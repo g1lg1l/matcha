@@ -128,7 +128,7 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
 
 function Stepper({ value, onChange, label }: { value: number | null; onChange: (v: number | null) => void; label: string }) {
   const { t } = useLang()
-  const round = 'grid size-9 place-items-center rounded-full bg-raised text-mute transition hover:text-ink active:scale-90 disabled:opacity-30'
+  const round = 'grid size-9 place-items-center pixel bg-raised text-mute transition hover:text-ink active:scale-90 disabled:opacity-30'
   return (
     <div className="flex shrink-0 items-center gap-1">
       <button aria-label={t('less')} disabled={!value} onClick={() => onChange(value ? value - 1 : null)} className={round}>

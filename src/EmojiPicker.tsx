@@ -38,7 +38,7 @@ export function EmojiPicker({ value, onChange, label, compact }: { value: string
             aria-label={e}
             onClick={() => onChange(e)}
             className={`hoppy grid shrink-0 snap-start place-items-center transition duration-200 active:scale-90 ${
-              compact ? 'size-11 rounded-[14px] text-[24px]' : 'size-[52px] rounded-[18px] text-[28px]'
+              compact ? 'size-11 rounded-[8px] text-[24px]' : 'size-[52px] rounded-[8px] text-[28px]'
             } ${on ? 'bg-c-mint shadow-[inset_0_0_0_2px_var(--brand)]' : `${compact ? 'bg-raised' : 'bg-sheet'} shadow-[inset_0_-2px_0_var(--line)] hover:-translate-y-0.5`}`}
           >
             <span className={`transition-[scale,opacity] duration-200 ${on ? '' : 'opacity-85'}`} style={{ scale: (scale[e] ?? 1) * (on ? 1.12 : 1) }}>

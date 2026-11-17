@@ -33,7 +33,7 @@
   - *Online*: saved in Supabase. Share the link and friends follow live. A local tournament can be put online at any time.
 - **Referee link.** Online, the organiser can send a second link. Whoever opens it can enter results and edit the tournament, but can't delete it. It's also how you run your tournament from your other devices. Results are saved one at a time on the server, so two referees entering different matches never overwrite each other. The organiser can make a new referee link at any time, and the old one stops working.
 - **Italian and English**, picked from the device language, switchable anytime.
-- **Playful, like Midori**: same palette steeped towards matcha, Unbounded and Figtree, sheets that slide up, emoji confetti and a wobbling trophy for the champion. Brackets are drawn with joining lines, standings end on a podium, and a progress bar shows how far along you are. Light and dark themes, with a light vibration on phones.
+- **Night arcade look**: true black, one matcha lime on the action and the data, Inter for reading and Pixelify Sans for names and scores. Trophies, medals and sports are pixel-art sprites, buttons have pixel-cut corners, and the champion gets pixel confetti and a wobbling trophy. Brackets are drawn with joining lines, standings end on a podium, and a progress bar shows how far along you are. A light vibration on phones.
 - **Play again**: start a new tournament with the same players and rules in one tap.
 - **Web, Android and iOS** from one codebase. On the web it's also installable as an app.
 
@@ -41,7 +41,7 @@
 
 ## Stack
 
-React, Vite, TypeScript and Tailwind. Icons come from Iconify, bundled at build time so they work offline: Solar's two-tone set for the interface and Fluent Emoji for trophies, medals and sports, so they look the same on every device. Capacitor wraps the same build into the Android and iOS apps. Supabase (anonymous auth, Postgres with RLS, Realtime) handles online tournaments. It's the same Supabase project as Midori, and every table and function is prefixed `matcha_`.
+React, Vite, TypeScript and Tailwind. Icons come from Iconify, bundled at build time so they work offline: Pixelarticons for the interface, and Fluent Emoji for trophies, medals and sports, shrunk to 16×16 pixel sprites by `scripts/pixel-emoji.mjs` (run it after adding an emoji), so they look the same on every device. Capacitor wraps the same build into the Android and iOS apps. Supabase (anonymous auth, Postgres with RLS, Realtime) handles online tournaments. It's the same Supabase project as Midori, and every table and function is prefixed `matcha_`.
 
 The tournament logic lives in [`src/engine.ts`](src/engine.ts) and [`src/party.ts`](src/party.ts). It's pure TypeScript, tested in the matching `.test.ts` files. A tournament stores only its settings, players and results. Everything else (who plays whom, standings, champion) is rebuilt from those, which is why corrections just work.
 

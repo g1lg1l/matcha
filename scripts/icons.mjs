@@ -8,9 +8,9 @@ import { join } from 'node:path'
 const { chromium } = createRequire(import.meta.url)('playwright')
 
 const svg = readFileSync(new URL('../public/favicon.svg', import.meta.url), 'utf8')
-const BG = '#2D4A1E'
-const PAPER = '#EEF2E5'
-const drawing = svg.replace(/<rect[^>]*\/>/, '') // just the bowl and bracket, no tile
+const BG = '#000000'
+const PAPER = '#000000'
+const drawing = svg.replace(/<path[^>]*\/>/, '') // just the bowl and bracket, no tile
 
 // The drawing at `scale` of the canvas, centred on `bg` (or transparent).
 const art = (size, scale, bg, radius = 0) => {
