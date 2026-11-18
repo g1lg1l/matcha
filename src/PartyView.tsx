@@ -1,10 +1,12 @@
 // Multiplayer games: rounds of tables, entering a table's finishing order, and the standings.
 import { Emoji, Icon } from './icons'
 import { useMemo, useRef, useState } from 'react'
+import { ChampionCard, Panel, type Col } from './Bracket'
 import { build, withResult, type Built, type Tournament } from './engine'
 import { useLang } from './i18n'
 import { nextRound, partyOptions, placePoints, placesFor, placesFromScores, type Table, type TableResult } from './party'
-import { Avatar, btn, burst, closeSheet, Count, danger, ghost, pill, ReadyCard, Sheet, toast, useFlip } from './ui'
+import { Avatar, btn, burst, closeSheet, Count, danger, ghost, pill, ReadyCard, Sheet, useFlip, warn } from './ui'
+import { MatchTimer, TimerChip } from './RoundTimer'
 import { colorOfIndex, num } from './view'
 
 const medal = (place: number) => (place <= 3 ? <Emoji e={['🥇', '🥈', '🥉'][place - 1]} className="text-lg" label={`${place}`} /> : undefined)
@@ -41,7 +43,7 @@ export function RoundsView({ t, b, canEdit, onOpen, onNextRound }: { t: Tourname
             </h3>
             <div className="stagger grid gap-3 sm:grid-cols-2">
               {tables.map((table) => (
-                <TableCard key={table.id} table={table} who={who} canEdit={canEdit} onOpen={() => onOpen(table)} />
+                <TableCard key={table.id} table={table} tid={t.id} who={who} canEdit={canEdit} onOpen={() => onOpen(table)} />
               ))}
             </div>
           </section>
@@ -51,7 +53,44 @@ export function RoundsView({ t, b, canEdit, onOpen, onNextRound }: { t: Tourname
   )
 }
 
-function TableCard({ table, who, canEdit, onOpen }: { table: Table; who: ReturnType<typeof usePlayer>; canEdit: boolean; onOpen: () => void }) {
+/**
+ * The same tournament as a bracket: one column per round, its tables down the column, the rounds still to
+ * come waiting on the right and the winner at the end. Everyone plays every round, so no lines join the columns.
+ */
+export function PartyBracket({ t, b, canEdit, onOpen, onNextRound }: { t: Tournament; b: Built; canEdit: boolean; onOpen: (table: Table) => void; onNextRound: () => void }) {
+  const { t: tr } = useLang()
+  const who = usePlayer(t)
+  const total = Math.max(t.options.party?.rounds ?? 3, b.roundsPlayed)
+  const canSeat = canEdit && b.roundDone && b.roundsPlayed < total
+  const cols: Col[] = Array.from({ length: total }, (_, i) => {
+    const round = i + 1
+    const tables = b.tables.filter((x) => x.round === round)
+    return {
+      title: tr('roundN', { n: round }),
+      matches: [],
+      plain: true,
+      count: tables.length ? [tables.filter((x) => x.status === 'done').length, tables.length] : undefined,
+      live: tables.some((x) => x.status !== 'done') || (canSeat && round === b.roundsPlayed + 1),
+      node: tables.length ? (
+        <div className="grid gap-3">
+          {tables.map((table) => (
+            <TableCard key={table.id} table={table} tid={t.id} who={who} canEdit={canEdit} onOpen={() => onOpen(table)} />
+          ))}
+        </div>
+      ) : canSeat && round === b.roundsPlayed + 1 ? (
+        <button onClick={onNextRound} className={`${pill} shine pop h-14 w-full`}>
+          <Icon name="stars" size={20} /> {tr('nextRound', { n: round })}
+        </button>
+      ) : (
+        <div className="grid min-h-24 place-items-center rounded-2xl border-2 border-dashed border-line text-sm text-mute">{tr('waiting')}</div>
+      ),
+    }
+  })
+  if (b.finished && b.champion) cols.push({ title: tr('champion'), matches: [], node: <ChampionCard {...who(b.champion)} /> })
+  return <Panel cols={cols} tint="bg-c-mint" wide />
+}
+
+function TableCard({ table, tid, who, canEdit, onOpen }: { table: Table; /** the tournament, for the table's timer */ tid: string; who: ReturnType<typeof usePlayer>; canEdit: boolean; onOpen: () => void }) {
   const { t } = useLang()
   const r = table.result
   const order = r ? [...table.players].sort((x, y) => r.place[x] - r.place[y]) : table.players
@@ -81,7 +120,10 @@ function TableCard({ table, who, canEdit, onOpen }: { table: Table; who: ReturnT
   )
   const base = 'block w-full overflow-hidden rounded-2xl bg-sheet text-left'
   return canEdit && !r ? (
-    <ReadyCard onClick={onOpen}>{body}</ReadyCard>
+    <div className="relative">
+      <ReadyCard onClick={onOpen}>{body}</ReadyCard>
+      <TimerChip id={`${tid}:${table.id}`} />
+    </div>
   ) : canEdit ? (
     <button onClick={onOpen} className={`${base} transition hover:ring-2 hover:ring-brand/40 active:scale-[0.99]`}>
       {body}
@@ -114,7 +156,7 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
   }
 
   function save() {
-    if (!complete) return toast(t('allPlaced'))
+    if (!complete) return warn(t('allPlaced'))
     const result: TableResult = { ids, place, score }
     onResult(table.id, result)
     const after = build(withResult(tour, table.id, result))
@@ -164,6 +206,7 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
       }
     >
       <p className="mb-4 text-sm text-mute">{t('finishOrder')}</p>
+      {!initial && <MatchTimer id={`${tour.id}:${table.id}`} label={t('tableN', { n: table.index + 1 })} />}
       <ol ref={list} className="grid grid-cols-1 gap-2">
         {sorted.map((id) => {
           const p = who(id)

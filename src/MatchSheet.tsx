@@ -1,13 +1,15 @@
 import { Emoji, Icon } from './icons'
 import { useRef, useState } from 'react'
-import { build, withResult, type Built, type Match, type Result, type Side, type Tournament } from './engine'
+import { build, sideKey, withResult, type Built, type Match, type Result, type Side, type Tournament } from './engine'
 import { useLang } from './i18n'
-import { Avatar, btn, burst, closeSheet, danger, Sheet, tick, toast } from './ui'
+import { Avatar, btn, burst, closeSheet, danger, Sheet, tick, warn } from './ui'
+import { MatchTimer } from './RoundTimer'
 import { colorOfIndex, roundLabel, sectionLabel } from './view'
 
 export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: Tournament; b: Built; onResult: (matchId: string, r: Result | null) => void; onClose: () => void }) {
   const { t } = useLang()
-  const draws = m.bracket === 'RR'
+  const pairs = !!m.a2
+  const draws = m.bracket === 'RR' && !pairs
   const [a, setA] = useState<number | null>(m.result?.a ?? null)
   const [bs, setB] = useState<number | null>(m.result?.b ?? null)
   const [w, setW] = useState<Side | 'draw' | null>(m.result?.w ?? null)
@@ -38,8 +40,8 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
   })()
 
   function save() {
-    if (!w) return toast(t('needWinner'))
-    const result: Result = { a, b: bs, w, pa: m.a!, pb: m.b! }
+    if (!w) return warn(t('needWinner'))
+    const result: Result = { a, b: bs, w, pa: sideKey(m, 'a'), pb: sideKey(m, 'b') }
     const next = withResult(tour, m.id, result)
     onResult(m.id, result)
     const rect = saveRef.current?.getBoundingClientRect()
@@ -56,15 +58,21 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
   }
 
   const section = sectionLabel(m, tour.format)
+  const teamOf = (side: Side) => (side === 'a' ? [m.a, m.a2] : [m.b, m.b2]).filter((id) => id != null).map(player)
+  const names = (side: Side) => teamOf(side).map((x) => x.name).join(' & ')
   const sideRow = (side: Side) => {
-    const id = side === 'a' ? m.a! : m.b!
-    const p = player(id)
+    const team = teamOf(side)
+    const p = { ...team[0], name: team.map((x) => x.name).join(' & ') }
     const score = side === 'a' ? a : bs
     const picked = w === side
     return (
       <div className={`flex items-center gap-2 rounded-2xl border-2 p-2 transition ${picked ? 'border-brand bg-c-mint' : 'border-line'}`}>
         <button onClick={() => setW(side)} aria-pressed={picked} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 text-left active:scale-[0.98]">
-          <Avatar {...p} size={38} />
+          <span className="flex shrink-0 -space-x-3">
+            {team.map((x, i) => (
+              <Avatar key={i} {...x} size={38} />
+            ))}
+          </span>
           <span className="min-w-0">
             <span className="block truncate font-display text-[17px] font-semibold">{p.name}</span>
             <span key={`${picked}`} className={`flex origin-left items-center gap-1 text-sm ${picked ? 'pop font-semibold text-brand' : 'text-mute'}`}>
@@ -106,7 +114,8 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
         </div>
       }
     >
-      <p className="mb-4 text-sm text-mute">{t('tapWinner')}</p>
+      <p className="mb-4 text-sm text-mute">{t(pairs ? 'scoreCounts' : 'tapWinner')}</p>
+      {m.status === 'ready' && <MatchTimer id={`${tour.id}:${m.id}`} label={`${names('a')} – ${names('b')}`} />}
       <div className="grid gap-2.5">
         {sideRow('a')}
         <div className="text-center font-display text-sm font-bold text-mute">VS</div>

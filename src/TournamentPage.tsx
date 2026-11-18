@@ -10,13 +10,16 @@ import { build, progress, withResult, type Match, type Result, type Tournament }
 import { t as translate, useLang } from './i18n'
 import { MatchSheet } from './MatchSheet'
 import type { TableResult } from './party'
-import { PartyStandings, RoundsView, TableSheet, withNextRound } from './PartyView'
+import { PartyBracket, PartyStandings, RoundsView, TableSheet, withNextRound } from './PartyView'
 import { Podium } from './Podium'
+import { RoundTimer } from './RoundTimer'
+import { ScoreBoard } from './ScoreBoard'
+import { timers } from './timers'
 import { createOnline, deleteOnline, errorText, openByCode, saveOnline, setResultOnline, shareUrl, subscribe, unfollow } from './online'
 import { go } from './router'
 import { SettingsSheet } from './SettingsSheet'
 import { forgetOnline, getOnline, rememberOnline, removeLocal, saveLocal, updateOnlineSnapshot, useStore, type Role } from './store'
-import { btn, burst, iconBtn, outline, Scramble, Segmented, shareLink, Splash, toast } from './ui'
+import { btn, burst, iconBtn, outline, Scramble, Segmented, shareLink, Splash, toast, warn } from './ui'
 import { formatEmoji } from './view'
 
 export interface Source {
@@ -92,7 +95,7 @@ export function OnlineTournament({ code, referee }: { code: string; referee?: st
   if (!t) return state === 'offline' ? <Offline /> : <Splash />
 
   const failed = (e: unknown) => {
-    toast(errorText(e))
+    warn(errorText(e))
     setT(server.current)
   }
   const save = (next: Tournament) => {
@@ -142,7 +145,8 @@ function TournamentPage({ source }: { source: Source }) {
   const b = build(tour)
   const knockout = tour.format === 'single' || tour.format === 'double'
   const party = tour.format === 'party'
-  const [tab, setTab] = useState<Tab>(knockout ? 'bracket' : 'matches')
+  const counter = tour.format === 'counter'
+  const [tab, setTab] = useState<Tab>(knockout || party ? 'bracket' : 'matches')
   const [open, setOpen] = useState<string>()
   const [settings, setSettings] = useState(false)
   const champion = b.champion ? tour.players.find((p) => p.id === b.champion) : undefined
@@ -150,11 +154,23 @@ function TournamentPage({ source }: { source: Source }) {
   const openMatch = open ? b.byId.get(open) : undefined
   const openTable = open ? b.tables.find((x) => x.id === open) : undefined
   const prog = progress(b, tour)
+  // the round timer's lap in knockouts and leagues: how many rounds have all their results in
+  const roundsOver = (() => {
+    const all = new Set<string>()
+    const open = new Set<string>()
+    for (const m of b.matches) {
+      if (m.status === 'bye' || m.hidden) continue
+      all.add(`${m.bracket}${m.round}`)
+      if (m.status !== 'done') open.add(`${m.bracket}${m.round}`)
+    }
+    return all.size - open.size
+  })()
 
   // every result can be taken back for a few seconds, including the later results it reset
   const record = (id: string, r: Result | TableResult | null) => {
     const before = tour
     source.setResult(id, r)
+    if (r) timers.forget(`${tour.id}:${id}`) // the match is over, and so is its timer
     toast(r ? t('resultSaved') : t('deleted'), { label: t('undo'), run: () => source.save(before) })
   }
 
@@ -168,10 +184,11 @@ function TournamentPage({ source }: { source: Source }) {
       const row = await createOnline(tour)
       rememberOnline({ code: row.share_code, role: 'owner', t: row.data })
       removeLocal(tour.id)
+      timers.forgetAll(tour.id) // online it has another id
       go({ page: 'online', code: row.share_code }, true)
       toast(t('published'))
     } catch (e) {
-      toast(errorText(e))
+      warn(errorText(e))
     }
   }
 
@@ -185,10 +202,11 @@ function TournamentPage({ source }: { source: Source }) {
         await unfollow(tour.id).catch(() => {})
         forgetOnline(source.online.code)
       }
+      timers.forgetAll(tour.id)
       go({ page: 'home' }, true)
-      toast(t('deleted'))
+      toast(t(counter ? 'boardDeleted' : 'deleted'))
     } catch (e) {
-      toast(errorText(e))
+      warn(errorText(e))
     }
   }
 
@@ -205,7 +223,7 @@ function TournamentPage({ source }: { source: Source }) {
             <Icon name="share" size={20} />
           </button>
         )}
-        <button onClick={() => setSettings(true)} aria-label={t('tournamentSettings')} className={`${iconBtn} twist`}>
+        <button onClick={() => setSettings(true)} aria-label={t(counter ? 'settings' : 'tournamentSettings')} className={`${iconBtn} twist`}>
           <Icon name="settings" size={20} />
         </button>
       </header>
@@ -224,6 +242,7 @@ function TournamentPage({ source }: { source: Source }) {
       </p>
 
       {prog.total > 0 && !b.finished && <ProgressBar done={prog.done} total={prog.total} />}
+      {!b.finished && <RoundTimer id={tour.id} round={party ? b.roundsPlayed : roundsOver} played={prog.done} plain={counter} />}
 
       {champion && <ChampionBanner name={champion.name} id={tour.id} />}
       {/* it's over: the next thing anyone wants is to go again, same players and rules */}
@@ -241,13 +260,15 @@ function TournamentPage({ source }: { source: Source }) {
 
       {source.online?.role === 'viewer' && <p className="mt-4 rounded-xl bg-well px-3.5 py-2.5 text-sm text-mute"><Emoji e="👀" className="mr-1" /> {t('viewOnly')}</p>}
 
-      <div className="mt-6 mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+      {counter && <ScoreBoard source={source} />}
+
+      <div className={`mt-6 mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 ${counter ? 'hidden' : ''}`}>
         <Segmented
           label={t('bracket')}
           value={tab}
           onChange={setTab}
           options={[
-            ...(knockout ? [{ value: 'bracket' as const, label: tabLabel('bracket', t('bracket')) }] : []),
+            ...(knockout || party ? [{ value: 'bracket' as const, label: tabLabel('bracket', t('bracket')) }] : []),
             { value: 'matches', label: tabLabel('list', party ? t('rounds') : t('matches')) },
             { value: 'standings', label: tabLabel('trophy', t('standings')) },
           ]}
@@ -255,8 +276,9 @@ function TournamentPage({ source }: { source: Source }) {
         {source.canEdit && prog.done === 0 && tab !== 'standings' && <p className="text-sm"><Emoji e="👆" className="bob mr-1" /> <ShinyText text={party ? t('tapTable') : t('tapToPlay')} color="#b4b4b4" shineColor="#ffffff" speed={3} /></p>}
       </div>
 
-      <div key={tab} className="fade-in">
+      <div key={tab} className={`fade-in ${counter ? 'hidden' : ''}`}>
         {tab === 'bracket' && knockout && <BracketView ctx={ctx} />}
+        {tab === 'bracket' && party && <PartyBracket t={tour} b={b} canEdit={source.canEdit} onOpen={(x) => setOpen(x.id)} onNextRound={() => source.save(withNextRound(tour))} />}
         {tab === 'matches' && !party && <MatchList ctx={ctx} />}
         {tab === 'matches' && party && (
           <RoundsView
@@ -275,7 +297,7 @@ function TournamentPage({ source }: { source: Source }) {
         )}
       </div>
 
-      {!source.online && (
+      {!source.online && !counter && (
         <button onClick={publish} className="mt-12 flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-line p-4 text-left transition hover:border-brand active:scale-[0.98]">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-c-sky">
             <Icon name="link" size={20} />

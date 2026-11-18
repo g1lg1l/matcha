@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import DotGrid from './bits/DotGrid'
 import { Emoji, Icon, type IconName } from './icons'
-import { rounds, standings, type Bracket, type Built, type Match, type Slot, type Tournament } from './engine'
+import { pairsTable, rounds, standings, type Bracket, type Built, type Match, type Slot, type Tournament } from './engine'
 import { useLang } from './i18n'
+import { TimerChip } from './RoundTimer'
 import { Avatar, Count, ReadyCard, reducedMotion, tick, useFlip } from './ui'
 import { colorOfIndex, roundLabel } from './view'
 
@@ -33,14 +34,16 @@ export function MatchCard({ m, ctx, label, gold }: { m: Match; ctx: Ctx; label?:
     was.current = now
   }, [m.status, m.a, m.b])
   const side = (s: Slot, key: 'a' | 'b') => {
+    const mate = key === 'a' ? m.a2 : m.b2
     const won = m.status === 'done' && m.winner === s && !!s
     const lost = m.status === 'done' && m.loser === s && !!s
     const score = m.result?.[key]
     return (
       <div className={`flex min-h-10 items-center gap-2 px-3 transition-colors duration-500 ${lost ? 'text-mute' : ''} ${won ? (gold ? 'bg-gold/15' : 'bg-brand/10') : ''}`}>
         {s ? <Avatar {...who(s)} size={22} /> : <span className="size-[22px] shrink-0 pixel border-2 border-dashed border-line" />}
+        {mate && <span className="-ml-3.5 flex"><Avatar {...who(mate)} size={22} /></span>}
         <span className={`min-w-0 flex-1 truncate text-[15px] ${won ? 'font-bold' : s ? 'font-medium' : 'text-mute italic'}`}>
-          {s ? who(s).name : s === null ? t('bye') : t('tbd')}
+          {s ? `${who(s).name}${mate ? ` & ${who(mate).name}` : ''}` : s === null ? t('bye') : t('tbd')}
         </span>
         {won && m.bracket !== 'RR' && <Icon name={gold ? 'crown' : 'check'} size={16} className={`pop shrink-0 ${gold ? 'text-gold' : 'text-brand'}`} />}
         {score != null && (
@@ -63,7 +66,8 @@ export function MatchCard({ m, ctx, label, gold }: { m: Match; ctx: Ctx; label?:
   )
   const base = `relative block w-full overflow-hidden rounded-2xl bg-sheet text-left ${m.status === 'bye' ? 'opacity-45' : ''} ${gold && m.status === 'done' ? 'shadow-[inset_0_0_0_2px_var(--gold)]' : ''}`
   return (
-    <div ref={box}>
+    <div ref={box} className="relative">
+      {m.status === 'ready' && <TimerChip id={`${ctx.t.id}:${m.id}`} />}
       {clickable && m.status === 'ready' ? (
         <ReadyCard onClick={() => ctx.onOpen(m)}>{body}</ReadyCard>
       ) : clickable ? (
@@ -80,19 +84,25 @@ export function MatchCard({ m, ctx, label, gold }: { m: Match; ctx: Ctx; label?:
 // Bracket columns sit in one arena and are joined by wires (index.css): each match has a stub out to the
 // right, pairs feeding the same next match get a vertical joiner, and the next match a stub in.
 // Every slot in a column has the same height and columns stretch to the same height, so centres line up.
-interface Col {
+export interface Col {
   title: ReactNode
   matches: Match[]
   /** no lines into or out of this column (the 3rd place match) */
   loose?: boolean
-  /** something else than matches in this column (the champion at the end) */
+  /** something else than matches in this column (the champion at the end, a round of tables) */
   node?: ReactNode
+  /** a column of its own content with no line into it and no gold: a round of multiplayer tables */
+  plain?: boolean
+  /** done and total, when the column doesn't hold matches to count */
+  count?: [number, number]
+  /** something here waits to be played, when the column doesn't hold matches to tell */
+  live?: boolean
 }
 
 // the dots light up in the colour of their bracket
 const hues: Record<string, string> = { 'bg-c-mint': '#c6f24e', 'bg-c-peach': '#ff8a3d', 'bg-c-lemon': '#ffc83d' }
 
-function Panel({ cols, tint, ctx }: { cols: Col[]; tint: string; ctx: Ctx }) {
+export function Panel({ cols, tint, ctx, wide }: { cols: Col[]; tint: string; /** only needed for columns of matches */ ctx?: Ctx; /** roomier columns, for tables of several players */ wide?: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   const [at, setAt] = useState(0)
   const column = (i: number) => box.current?.children[i] as HTMLElement | undefined
@@ -101,7 +111,8 @@ function Panel({ cols, tint, ctx }: { cols: Col[]; tint: string; ctx: Ctx }) {
     if (box.current && el) box.current.scrollTo({ left: el.offsetLeft - 20, behavior: smooth && !reducedMotion() ? 'smooth' : 'auto' })
   }
   // the bracket is wider than a phone: bring the round with the next match to play into view as rounds go by
-  const next = cols.findIndex((c) => c.matches.some((m) => m.status === 'ready'))
+  const isLive = (c: Col) => c.live ?? c.matches.some((m) => m.status === 'ready')
+  const next = cols.findIndex(isLive)
   useEffect(() => {
     if (next >= 0) goTo(next)
     // goTo only reads refs
@@ -129,9 +140,8 @@ function Panel({ cols, tint, ctx }: { cols: Col[]; tint: string; ctx: Ctx }) {
           const linksOut = !!next && !next.loose && !col.loose
           const linksIn = i > 0 && !col.loose && !cols[i - 1].loose
           const paired = linksOut && next.matches.length * 2 === col.matches.length
-          const played = col.matches.filter((m) => m.status === 'done').length
-          const real = col.matches.filter((m) => m.status !== 'bye').length
-          const live = col.matches.some((m) => m.status === 'ready')
+          const [played, real] = col.count ?? [col.matches.filter((m) => m.status === 'done').length, col.matches.filter((m) => m.status !== 'bye').length]
+          const live = isLive(col)
           // the last round of matches: nothing after it but the champion or the 3rd place match
           const decider = !col.loose && !col.node && (!next || !!next.loose || !!next.node)
           const slot = (m: Match) => (
@@ -139,13 +149,13 @@ function Panel({ cols, tint, ctx }: { cols: Col[]; tint: string; ctx: Ctx }) {
               key={m.id}
               className={`relative flex flex-1 flex-col justify-center py-1.5 ${linksOut ? `wire-out ${m.status === 'done' || m.status === 'bye' ? 'lit-out' : ''}` : ''} ${linksIn ? `wire-in ${m.a || m.b ? 'lit-in' : ''}` : ''}`}
             >
-              <MatchCard m={m} ctx={ctx} gold={decider && m.bracket !== 'L'} />
+              <MatchCard m={m} ctx={ctx!} gold={decider && m.bracket !== 'L'} />
             </div>
           )
           const groups = paired ? Array.from({ length: col.matches.length / 2 }, (_, k) => col.matches.slice(k * 2, k * 2 + 2)) : null
           return (
-            <div key={i} className={`flex w-[min(14rem,72vw)] shrink-0 snap-start flex-col ${next ? (col.loose || next.loose ? 'mr-6' : 'mr-8') : ''}`}>
-              <h4 className={`flex items-center gap-2 px-1 pb-2 font-display text-[14px] ${live ? 'text-brand' : col.node ? 'text-gold' : ''}`}>
+            <div key={i} className={`flex ${wide ? 'w-[min(17rem,80vw)]' : 'w-[min(14rem,72vw)]'} shrink-0 snap-start flex-col ${next ? (col.plain ? 'mr-4' : col.loose || next.loose ? 'mr-6' : 'mr-8') : ''}`}>
+              <h4 className={`flex items-center gap-2 px-1 pb-2 font-display text-[14px] ${live ? 'text-brand' : col.node && !col.plain ? 'text-gold' : ''}`}>
                 {live && <span aria-hidden className="blink size-1.5 shrink-0 bg-brand" />}
                 <span className="min-w-0 flex-1 truncate">{col.title}</span>
                 {real > 0 && (
@@ -155,7 +165,9 @@ function Panel({ cols, tint, ctx }: { cols: Col[]; tint: string; ctx: Ctx }) {
                 )}
               </h4>
               <div className="flex flex-1 flex-col">
-                {col.node ? (
+                {col.plain ? (
+                  <div className="py-1.5">{col.node}</div>
+                ) : col.node ? (
                   <div className="wire-in lit-in relative flex flex-1 flex-col justify-center py-1.5">{col.node}</div>
                 ) : groups ? (
                   groups.map((g, k) => (
@@ -192,6 +204,17 @@ function columns(ctx: Ctx, bracket: Bracket): Col[] {
     .map((ms) => ({ title: roundLabel(ms[0], ctx.b), matches: ms }))
 }
 
+/** Who won it all, at the end of a bracket. */
+export function ChampionCard({ name, color }: { name: string; color: string }) {
+  return (
+    <div className="pop grid justify-items-center gap-1.5 rounded-2xl bg-sheet px-3 py-4 text-center shadow-[inset_0_0_0_2px_var(--gold)]">
+      <Emoji e="👑" className="wobble text-2xl" />
+      <Avatar name={name} color={color} size={72} />
+      <span className="w-full truncate font-display text-lg">{name}</span>
+    </div>
+  )
+}
+
 export function BracketView({ ctx }: { ctx: Ctx }) {
   const { t } = useLang()
   const who = useNames(ctx.t)
@@ -202,13 +225,7 @@ export function BracketView({ ctx }: { ctx: Ctx }) {
         {
           title: t('champion'),
           matches: [],
-          node: (
-            <div className="pop grid justify-items-center gap-1.5 rounded-2xl bg-sheet px-3 py-4 text-center shadow-[inset_0_0_0_2px_var(--gold)]">
-              <Emoji e="👑" className="wobble text-2xl" />
-              <Avatar {...who(ctx.b.champion)} size={72} />
-              <span className="w-full truncate font-display text-lg">{who(ctx.b.champion).name}</span>
-            </div>
-          ),
+          node: <ChampionCard {...who(ctx.b.champion)} />,
         },
       ]
     : []
@@ -246,9 +263,9 @@ export function MatchList({ ctx }: { ctx: Ctx }) {
         )
   }
 
-  if (ctx.t.format === 'roundrobin') {
+  if (ctx.t.format === 'roundrobin' || ctx.t.format === 'rotating') {
     const cols = rounds(ctx.b.matches, 'RR')
-    const resting = (ms: Match[]) => ctx.t.players.filter((p) => !ms.some((m) => m.a === p.id || m.b === p.id))
+    const resting = (ms: Match[]) => ctx.t.players.filter((p) => !ms.some((m) => [m.a, m.a2, m.b, m.b2].includes(p.id)))
     return (
       <div className="grid grid-cols-1 gap-6">
         {cols.map(([round, ms]) => (
@@ -305,8 +322,9 @@ export function Standings({ ctx }: { ctx: Ctx }) {
   const list = useFlip<HTMLOListElement>()
   const medal = (rank: number) => (rank <= 3 ? <Emoji e={['🥇', '🥈', '🥉'][rank - 1]} className="text-xl" label={`${rank}`} /> : rank)
 
-  if (ctx.t.format === 'roundrobin') {
-    const rows = standings(ctx.t.players, ctx.b.matches, ctx.t.options.points)
+  if (ctx.t.format === 'roundrobin' || ctx.t.format === 'rotating') {
+    const pairs = ctx.t.format === 'rotating'
+    const rows = pairs ? pairsTable(ctx.t.players, ctx.b.matches) : standings(ctx.t.players, ctx.b.matches, ctx.t.options.points)
     const th = 'px-1.5 py-2 text-center font-semibold'
     return (
       <div className="-mx-1 overflow-x-auto">
@@ -317,10 +335,19 @@ export function Standings({ ctx }: { ctx: Ctx }) {
               <th className={`${th} text-left`}>{t('players')}</th>
               <th className={th}>{t('pl')}</th>
               <th className={th}>{t('w')}</th>
-              <th className={th}>{t('d')}</th>
-              <th className={th}>{t('l')}</th>
-              <th className={th}>{t('diff')}</th>
-              <th className={th}>{t('pts')}</th>
+              {pairs ? (
+                <>
+                  <th className={th}>{t('pf')}</th>
+                  <th className={th}>{t('pa')}</th>
+                </>
+              ) : (
+                <>
+                  <th className={th}>{t('d')}</th>
+                  <th className={th}>{t('l')}</th>
+                  <th className={th}>{t('diff')}</th>
+                  <th className={th}>{t('pts')}</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -337,11 +364,21 @@ export function Standings({ ctx }: { ctx: Ctx }) {
                     </span>
                   </td>
                   <td className="px-1.5 text-center text-mute">{r.played}</td>
-                  <td className="px-1.5 text-center">{r.won}</td>
-                  <td className="px-1.5 text-center">{r.drawn}</td>
-                  <td className="px-1.5 text-center">{r.lost}</td>
-                  <td className="px-1.5 text-center text-mute">{diff > 0 ? `+${diff}` : diff}</td>
-                  <td className="px-1.5 text-center font-bold"><Count n={r.points} /></td>
+                  {pairs ? (
+                    <>
+                      <td className="px-1.5 text-center font-bold"><Count n={r.won} /></td>
+                      <td className="px-1.5 text-center">{r.for}</td>
+                      <td className="px-1.5 text-center text-mute">{r.against}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-1.5 text-center">{r.won}</td>
+                      <td className="px-1.5 text-center">{r.drawn}</td>
+                      <td className="px-1.5 text-center">{r.lost}</td>
+                      <td className="px-1.5 text-center text-mute">{diff > 0 ? `+${diff}` : diff}</td>
+                      <td className="px-1.5 text-center font-bold"><Count n={r.points} /></td>
+                    </>
+                  )}
                 </tr>
               )
             })}

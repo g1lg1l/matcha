@@ -32,6 +32,12 @@ export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)'
 
 export const Logo = ({ className = '' }: { className?: string }) => <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className={className} />
 
+/** A toast for something refused or missing: Sileo's warning tone instead of the tick. */
+export const warn = (message: string) => {
+  dispatchEvent(new Event('toast'))
+  sileo.warning({ title: message, duration: 3500 })
+}
+
 type ToastAction = { label: string; run: () => void }
 /** A toast (Sileo). With an action it stays a little longer and carries the button, for undo. */
 export const toast = (message: string, action?: ToastAction) => {
@@ -306,13 +312,14 @@ export function Segmented<T extends string>({ value, options, onChange, label, f
       value={value}
       onChange={(v) => onChange(v as T)}
       size={fit ? 'md' : 'lg'}
-      equalSlots={!fit}
+      // slots as wide as their labels, stretched to fill: three equal ones can't hold "Tabellone" with its icon on a phone
+      equalSlots={false}
       radius={6}
       trackColor="#161616"
       thumbColor="#2a2a2a"
       textColor="#b4b4b4"
       activeTextColor="#ffffff"
-      className={`w-full font-semibold ${fit ? 'text-[13px] [--rs-pad:8px]!' : ''}`}
+      className={`w-full font-semibold [--rs-pad:8px]! ${fit ? 'text-[13px]' : 'text-[15px]'}`}
     />
   )
 }

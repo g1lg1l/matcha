@@ -14,6 +14,10 @@ const credits = [
   ['Sileo', 'https://www.npmjs.com/package/sileo'],
   ['Motion', 'https://motion.dev'],
   ['Pixelarticons', 'https://github.com/halfmage/pixelarticons'],
+  ['Streamline Pixel', 'https://icon-sets.iconify.design/streamline-pixel/'],
+  ['Pixel Icon Library', 'https://icon-sets.iconify.design/pixel/'],
+  ['Memory Icons', 'https://icon-sets.iconify.design/memory/'],
+  ['Iconify', 'https://iconify.design'],
 ] as const
 const row = 'flex min-h-13 w-full items-center gap-3 px-4 text-left font-medium transition-colors active:bg-raised'
 

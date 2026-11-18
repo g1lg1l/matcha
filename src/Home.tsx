@@ -10,9 +10,10 @@ import { useLang } from './i18n'
 import { parseCode } from './online'
 import { go } from './router'
 import { removeLocal, saveLocal, useStore, type Role } from './store'
+import { timers } from './timers'
 import { RoleBadge } from './TournamentPage'
-import { field, iconBtn, Logo, outline, pill, Scramble, toast } from './ui'
-import { EMOJIS, formatEmoji, summary } from './view'
+import { field, iconBtn, Logo, outline, pill, Scramble, toast, warn } from './ui'
+import { EMOJIS, formatEmoji, newTournament, summary } from './view'
 
 type Entry = { key: string; href: string; t: Tournament; online?: Role }
 
@@ -36,7 +37,7 @@ export function Home() {
       <p className="mt-5 max-w-[36ch] text-[17px] leading-relaxed text-mute">{t('tagline')}</p>
       <RotatingText
         key={lang}
-        texts={[t('single'), t('double'), t('roundrobin'), t('party')]}
+        texts={[t('single'), t('double'), t('roundrobin'), t('rotating'), t('party'), t('counter')]}
         rotationInterval={2600}
         staggerDuration={0.02}
         mainClassName="mt-3 overflow-hidden font-display text-xl text-brand"
@@ -44,9 +45,22 @@ export function Home() {
       />
       {!entries.length && <Toys />}
 
-      <a href="#/new" className={`${pill} ${entries.length ? '' : 'shine'} mt-8 h-14 w-full text-[17px]`}>
-        <Icon name="add" size={22} /> {entries.length ? t('newTournament') : t('firstTournament')}
-      </a>
+      {/* two ways in: a tournament to set up, or just a scoreboard, open at once with two players to rename */}
+      <div className="mt-8 grid grid-cols-2 gap-2">
+        <a href="#/new" className={`${pill} ${entries.length ? '' : 'shine'} h-14 text-[15px]`}>
+          <Icon name="add" size={20} /> {t('newTournament')}
+        </a>
+        <button
+          onClick={() => {
+            const board = newTournament({ name: t('counter'), emoji: '📈', format: 'counter', options: {}, players: [1, 2].map((n) => ({ id: crypto.randomUUID().slice(0, 8), name: t('playerN', { n }) })) })
+            saveLocal(board)
+            go({ page: 'local', id: board.id })
+          }}
+          className={`${outline} h-14 text-[15px]`}
+        >
+          <Emoji e="📈" className="text-[20px]" /> {t('counter')}
+        </button>
+      </div>
 
       {entries.length > 0 && (
         <section className="mt-10">
@@ -84,7 +98,8 @@ function SwipeCard({ entry }: { entry: Entry }) {
   }, [])
   const remove = () => {
     removeLocal(entry.t.id)
-    toast(t('deleted'), { label: t('undo'), run: () => saveLocal(entry.t) })
+    timers.forgetAll(entry.t.id)
+    toast(t(entry.t.format === 'counter' ? 'boardDeleted' : 'deleted'), { label: t('undo'), run: () => saveLocal(entry.t) })
   }
   return (
     <SwipeRow
@@ -165,7 +180,7 @@ function OpenLink() {
         onSubmit={(e) => {
           e.preventDefault()
           const link = parseCode(value)
-          if (!link) return toast(t('badLink'))
+          if (!link) return warn(t('badLink'))
           go({ page: 'online', ...link })
         }}
         className="mt-3 flex gap-2"

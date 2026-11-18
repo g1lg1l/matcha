@@ -5,7 +5,8 @@
 
 import { buildParty, type PartyOptions, type PartyRow, type Table, type TableResult } from './party'
 
-export type Format = 'single' | 'double' | 'roundrobin' | 'party'
+/** 'rotating' is the Italian "torneo giallo": two against two, a new partner every match */
+export type Format = 'single' | 'double' | 'roundrobin' | 'rotating' | 'party' | 'counter'
 
 export interface Player {
   id: string
@@ -71,6 +72,9 @@ export interface Match {
   index: number
   a: Slot
   b: Slot
+  /** rotating partners: the second player of each side */
+  a2?: string
+  b2?: string
   status: Status
   winner: Slot
   loser: Slot
@@ -209,6 +213,67 @@ function roundRobin(players: Player[], legs: 1 | 2): Shell[] {
   )
 }
 
+/** Rotating partners: everyone plays once with everyone else as a partner, two against two.
+ * The circle method gives each round's pairs, which are then set against each other. It comes out exact with 4, 5, 8, 9, 12... players.
+ * With the other counts one pair per round has nobody to play: those pairs meet in extra rounds, and one pair never forms. */
+function rotating(players: Player[]): Shell[] {
+  type Pair = [string, string]
+  const ids: (string | null)[] = players.map((p) => p.id)
+  if (ids.length % 2) ids.push(null)
+  const n = ids.length
+  // how often two players stood on opposite sides, to spread the opponents around
+  const met = new Map<string, number>()
+  const key = (x: string, y: string) => (x < y ? `${x}|${y}` : `${y}|${x}`)
+  const faced = (p: Pair, q: Pair) => p.reduce((sum, x) => sum + q.reduce((s, y) => s + (met.get(key(x, y)) ?? 0) ** 2, 0), 0)
+  const apart = (p: Pair, q: Pair) => !p.some((x) => q.includes(x))
+  const out: Shell[] = []
+  let round = 0
+  const play = (games: [Pair, Pair][]) => {
+    round++
+    games.forEach(([p, q], i) => {
+      out.push({ ...shell('RR', round, i), a: p[0], a2: p[1], b: q[0], b2: q[1] })
+      for (const x of p) for (const y of q) met.set(key(x, y), (met.get(key(x, y)) ?? 0) + 1)
+    })
+  }
+  // sets the round's pairs against each other so that the same players face each other as little as possible
+  // shortcut: every way is tried up to 8 pairs (105 ways); past that the first pair takes its best opponents and so on
+  const fairest = (pairs: Pair[]): [Pair, Pair][] => {
+    if (!pairs.length) return []
+    const [p, ...rest] = pairs
+    const cost = (games: [Pair, Pair][]) => games.reduce((sum, [x, y]) => sum + faced(x, y), 0)
+    const ways = rest.map((q, i) => [[p, q] as [Pair, Pair], ...(pairs.length > 8 ? [] : fairest(rest.filter((_, j) => j !== i)))])
+    const best = ways.reduce((x, y) => (cost(y) < cost(x) ? y : x))
+    return pairs.length > 8 ? [best[0], ...fairest(rest.filter((q) => q !== best[0][1]))] : best
+  }
+  const spare: Pair[] = []
+  let arr = ids
+  for (let r = 0; r < n - 1; r++) {
+    const pairs: Pair[] = []
+    for (let i = 0; i < n / 2; i++) {
+      const x = arr[i]
+      const y = arr[n - 1 - i]
+      if (x && y) pairs.push([x, y])
+    }
+    arr = [arr[0], arr[n - 1], ...arr.slice(1, n - 1)]
+    if (pairs.length % 2) {
+      // the pair left out is one that can play the pair left out the round before
+      const waiting = spare.length % 2 ? spare[spare.length - 1] : undefined
+      const i = waiting ? pairs.findIndex((p) => apart(p, waiting)) : -1
+      spare.push(...pairs.splice(i < 0 ? pairs.length - 1 : i, 1))
+    }
+    const games = fairest(pairs)
+    if (games.length) play(games)
+  }
+  for (let i = 0; i + 1 < spare.length; i += 2) if (apart(spare[i], spare[i + 1])) play([[spare[i], spare[i + 1]]])
+  return out
+}
+
+/** Who is on a side when its result goes in: the player, or the pair. */
+export const sideKey = (m: Match, side: Side) => {
+  const [x, y] = side === 'a' ? [m.a, m.a2] : [m.b, m.b2]
+  return y ? `${x}+${y}` : (x as string)
+}
+
 const validFor = (raw: Result | TableResult | undefined, a: Slot, b: Slot, draws: boolean) => {
   const r = raw && 'w' in raw ? raw : undefined
   return r && r.pa === a && r.pb === b && (draws || r.w !== 'draw') ? r : undefined
@@ -216,9 +281,23 @@ const validFor = (raw: Result | TableResult | undefined, a: Slot, b: Slot, draws
 
 const noParty = { tables: [], rows: [], roundsPlayed: 0, roundDone: false }
 
+/** A scoreboard (format "counter") keeps everyone's score in one result, under this id. */
+export const SCORES = 'scores'
+export const scoresOf = (t: Pick<Tournament, 'results'>): Record<string, number> => {
+  const r = t.results[SCORES]
+  return r && 'score' in r ? (r.score as Record<string, number>) : {}
+}
+
 export function build(t: Input): Built {
   const { format, players, options, results } = t
   const ranks = new Map<string, number>()
+
+  // a scoreboard has no matches: the scores are the whole of it, and the highest ranks first. It never ends by itself.
+  if (format === 'counter') {
+    const scores = scoresOf(t)
+    ;[...players].sort((x, y) => (scores[y.id] ?? 0) - (scores[x.id] ?? 0)).forEach((p, i) => ranks.set(p.id, i + 1))
+    return { matches: [], byId: new Map(), finished: false, champion: null, ranks, ...noParty }
+  }
 
   if (format === 'party') {
     const p = buildParty({ ...t, tables: t.tables })
@@ -236,16 +315,17 @@ export function build(t: Input): Built {
     }
   }
 
-  if (format === 'roundrobin') {
-    const matches: Match[] = roundRobin(players, options.legs ?? 1).map((m) => {
-      const result = validFor(results[m.id], m.a, m.b, true)
+  if (format === 'roundrobin' || format === 'rotating') {
+    const pairs = format === 'rotating'
+    const matches: Match[] = (pairs ? rotating(players) : roundRobin(players, options.legs ?? 1)).map((m) => {
+      const result = validFor(results[m.id], sideKey(m, 'a'), sideKey(m, 'b'), !pairs)
       if (!result) return { ...m, status: 'ready' }
       const winner = result.w === 'draw' ? null : result.w === 'a' ? m.a : m.b
       const loser = result.w === 'draw' ? null : result.w === 'a' ? m.b : m.a
       return { ...m, status: 'done', result, winner, loser }
     })
     const finished = matches.length > 0 && matches.every((m) => m.status === 'done')
-    const table = standings(players, matches, options.points)
+    const table = pairs ? pairsTable(players, matches) : standings(players, matches, options.points)
     table.forEach((row, i) => ranks.set(row.player, i + 1))
     return { matches, byId: new Map(matches.map((m) => [m.id, m])), finished, champion: finished ? (table[0]?.player ?? null) : null, ranks, ...noParty }
   }
@@ -400,6 +480,27 @@ export function standings(players: Player[], matches: Match[], pts: Points = POI
   )
 }
 
+/** Rotating partners, one row per player: wins, then points scored, then fewest points conceded. */
+export function pairsTable(players: Player[], matches: Match[]): Row[] {
+  const rows = new Map<string, Row>(players.map((p) => [p.id, { player: p.id, played: 0, won: 0, drawn: 0, lost: 0, for: 0, against: 0, points: 0 }]))
+  for (const m of matches) {
+    if (m.status !== 'done' || !m.result) continue
+    const { a, b, w } = m.result
+    for (const side of ['a', 'b'] as const)
+      for (const id of side === 'a' ? [m.a, m.a2] : [m.b, m.b2]) {
+        const row = id && rows.get(id)
+        if (!row) continue
+        row.played++
+        row.for += (side === 'a' ? a : b) ?? 0
+        row.against += (side === 'a' ? b : a) ?? 0
+        if (w === side) row.points = ++row.won
+        else row.lost++
+      }
+  }
+  const seed = new Map(players.map((p, i) => [p.id, i]))
+  return [...rows.values()].sort((x, y) => y.won - x.won || y.for - x.for || x.against - y.against || seed.get(x.player)! - seed.get(y.player)!)
+}
+
 /** Matches that can be played right now, in bracket order. */
 export const playable = (b: Built) => b.matches.filter((m) => m.status === 'ready')
 
@@ -411,6 +512,7 @@ export const started = (t: Input) => {
 
 /** Drops results that no longer match their match, so the stored document stays tidy. */
 export function prune(t: Tournament): Tournament {
+  if (t.format === 'counter') return t // its one result belongs to no match
   const built = build(t)
   const kept = new Set([...built.matches.filter((m) => m.result).map((m) => m.id), ...built.tables.filter((x) => x.result).map((x) => x.id)])
   const results = Object.fromEntries(Object.entries(t.results).filter(([id]) => kept.has(id)))

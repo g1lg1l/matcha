@@ -3,7 +3,7 @@
 <h1 align="center">Matcha</h1>
 
 <p align="center">
-  Tournaments with friends. Knockout, double elimination, round robin<br>or multiplayer games where everyone scores by where they finish.<br>
+  Tournaments with friends. Knockout, double elimination, round robin, rotating partners<br>or multiplayer games where everyone scores by where they finish. Or just a scoreboard.<br>
   Make the bracket, share the link, play. In Italian and English.
 </p>
 
@@ -18,15 +18,18 @@
 
 ## What it does
 
-- **Three formats**
+- **Five formats**
   - **Knockout** (single elimination), with an optional 3rd place match.
   - **Double elimination**: lose once and you drop to the losers bracket, lose twice and you're out. Grand final with an optional reset, so the losers-bracket player has to beat the winners-bracket player twice.
   - **Round robin** (girone all'italiana): everyone plays everyone, once or home and away. Points per win, draw and loss are up to you: 3·1·0 like football, 1·½·0 like chess, or anything else. Ties are broken by score difference, then points scored, then head to head.
+  - **Rotating partners** (the Italian *torneo giallo*): everyone signs up alone and plays two against two with a new partner every match, once with everyone else. The matches are made for you. Ranked by wins, then points scored, then fewest points conceded. It comes out exact with 4, 8, 12, 16 players (or one more); with other counts one pair never forms.
   - **Multiplayer games**: for board games, kart races, poker and the like. Each round seats everyone at tables of 2 to 8 players.
     - **Points by finishing place**: pick a preset (10·6·3·1, 3·2·1·0…) or type your own. Tied players share the points of the places they cover.
     - **Game scores (optional)**: type victory points, chips or strokes and the finishing order follows. Standings can go by place points or by total game score, with "lowest wins" for golf and the like.
     - **Seating**: random every round, or by standings so leaders play leaders. At tables of two it avoids rematches when it can.
     - **BIG rulebook** ([Board Italian Gamers](https://boarditaliangamers.it)): a points preset with 1000 for 1st place and the rest by table size (2 to 7 players), and its tie-breaks: share of the table's score after round 1, then whoever played at the higher table.
+- **Just a scoreboard.** From the home page, no tournament needed: a card per player, plus and minus, a keypad for bigger jumps.
+- **Timers.** One countdown for the round or the match being played, and one of its own for every match or table. They ring when time is up and keep the screen on.
 - **Any number of players**, from 2 to 128. Byes go to the top seeds. The list order is the seeding (#1 and #2 only meet in the final), or you can shuffle it. Paste a list to add everyone at once.
 - **Results in two taps.** Tap the winner, add scores if you like. Fix an old result and the bracket re-flows: later matches that no longer make sense reset by themselves. Every result can be undone for a few seconds, including what it reset.
 - **On your device or online.**

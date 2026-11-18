@@ -4,7 +4,7 @@ import { MAX_PLAYERS, shuffle, type Player } from './engine'
 import { useLang } from './i18n'
 import { useStore } from './store'
 import { colorOfIndex } from './view'
-import { Avatar, field, ghost, iconBtn, toast, useFlip } from './ui'
+import { Avatar, field, ghost, iconBtn, useFlip, warn } from './ui'
 
 /** Add, remove, reorder (= seed) and rename players. With `locked`, only renaming is allowed. */
 export function PlayersEditor({ players, onChange, locked = false }: { players: Player[]; onChange: (p: Player[]) => void; locked?: boolean }) {
@@ -19,7 +19,7 @@ export function PlayersEditor({ players, onChange, locked = false }: { players: 
     const seen = new Set<string>()
     return [...local, ...online.map((r) => r.t)]
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-      .flatMap((t) => t.players.map((p) => p.name))
+      .flatMap((t) => (t.format === 'counter' ? [] : t.players.map((p) => p.name)))
       .filter((name) => {
         const key = name.toLowerCase()
         if (taken.has(key) || seen.has(key)) return false
@@ -37,14 +37,14 @@ export function PlayersEditor({ players, onChange, locked = false }: { players: 
     const fresh: Player[] = []
     for (const name of names) {
       if (taken.has(name.toLowerCase())) {
-        toast(t('duplicate', { name }))
+        warn(t('duplicate', { name }))
         continue
       }
       taken.add(name.toLowerCase())
       fresh.push({ id: crypto.randomUUID().slice(0, 8), name })
     }
     const next = [...players, ...fresh]
-    if (next.length > MAX_PLAYERS) toast(t('tooMany', { n: MAX_PLAYERS }))
+    if (next.length > MAX_PLAYERS) warn(t('tooMany', { n: MAX_PLAYERS }))
     onChange(next.slice(0, MAX_PLAYERS))
     setDraft('')
   }

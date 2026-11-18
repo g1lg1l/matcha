@@ -6,9 +6,10 @@ import { nextRound } from './party'
 const palette = ['#d1495b', '#2e86ab', '#d9702a', '#6a4c93', '#17907f', '#c4497f', '#3d6fd8', '#6f8a1f']
 export const colorOfIndex = (i: number) => palette[i % palette.length]
 
-export const EMOJIS = ['🏆', '⚽', '🏀', '🎾', '🏓', '🏸', '🏐', '🥊', '🎳', '🎱', '🎯', '⛳', '🏎️', '🎮', '🎲', '♟️', '🃏', '🧩', '🍵']
+// Every picture offered is pixel art. Older tournaments may hold one that no longer is here (a football, a tennis ball): it still shows.
+export const EMOJIS = ['🏆', 'pixelarticons:goal', '🎱', '🎯', '🏎️', '🎮', 'pixelarticons:joystick', '🎲', '♟️', '🃏', 'pixelarticons:human-run', 'pixelarticons:flag', 'pixelarticons:coins', 'pixelarticons:fish', 'pixelarticons:star', '🍵']
 
-export const formatEmoji: Record<Format, string> = { single: '⚔️', double: '💕', roundrobin: '🎡', party: '🎲' }
+export const formatEmoji: Record<Format, string> = { single: '⚔️', double: '💕', roundrobin: '🎡', rotating: '🔀', party: '🎲', counter: '📈' }
 
 /** 4.5 → "4,5" in Italian, "4.5" in English */
 export const num = (n: number) => n.toLocaleString(getLang(), { maximumFractionDigits: 2 })

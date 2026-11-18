@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { build, playable, seedOrder, standings, type Format, type Options, type Result, type Tournament } from './engine'
+import { build, pairsTable, playable, SCORES, scoresOf, seedOrder, sideKey, standings, withResult, type Format, type Options, type Result, type Tournament } from './engine'
 
 const players = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `p${i + 1}`, name: `Player ${i + 1}` }))
 
@@ -17,7 +17,7 @@ const make = (n: number, format: Format, options: Options = {}): Tournament => (
 
 function win(t: Tournament, matchId: string, side: 'a' | 'b' | 'draw', score: [number, number] | null = null): Tournament {
   const m = build(t).byId.get(matchId)!
-  const r: Result = { a: score?.[0] ?? null, b: score?.[1] ?? null, w: side, pa: m.a!, pb: m.b! }
+  const r: Result = { a: score?.[0] ?? null, b: score?.[1] ?? null, w: side, pa: sideKey(m, 'a'), pb: sideKey(m, 'b') }
   return { ...t, results: { ...t.results, [matchId]: r } }
 }
 
@@ -256,5 +256,72 @@ describe('round robin', () => {
   it('plays out with draws', () => {
     const t = playOut(make(7, 'roundrobin', { legs: 2 }), rng(7), true)
     expect(build(t).finished).toBe(true)
+  })
+})
+
+describe('scoreboard', () => {
+  it('keeps its scores, which belong to no match, and ranks the highest first', () => {
+    const t = withResult(make(3, 'counter'), SCORES, { ids: ['p1', 'p2', 'p3'], place: {}, score: { p2: 7, p1: 3 } })
+    expect(scoresOf(t)).toEqual({ p2: 7, p1: 3 })
+    expect([...build(t).ranks.entries()]).toEqual([['p2', 1], ['p1', 2], ['p3', 3]])
+    expect(build(t).finished).toBe(false)
+  })
+})
+
+describe('rotating partners', () => {
+  // how many times each pair of players was on the same side
+  const partners = (n: number) => {
+    const count = new Map<string, number>()
+    const { matches } = build(make(n, 'rotating'))
+    for (const m of matches) {
+      expect(new Set([m.a, m.a2, m.b, m.b2]).size).toBe(4)
+      for (const pair of [[m.a, m.a2], [m.b, m.b2]]) count.set(pair.sort().join(), (count.get(pair.sort().join()) ?? 0) + 1)
+    }
+    // nobody plays twice in a round
+    for (const round of new Set(matches.map((m) => m.round))) {
+      const busy = matches.filter((m) => m.round === round).flatMap((m) => [m.a, m.a2, m.b, m.b2])
+      expect(new Set(busy).size).toBe(busy.length)
+    }
+    return count
+  }
+
+  it('pairs everyone with everyone exactly once when the count allows it', () => {
+    for (const n of [4, 5, 8, 9, 12, 13, 16, 20]) {
+      const count = partners(n)
+      expect(count.size, `${n} players`).toBe((n * (n - 1)) / 2)
+      expect([...count.values()].every((x) => x === 1)).toBe(true)
+    }
+  })
+
+  it('otherwise never repeats a pair and leaves out just one', () => {
+    for (const n of [6, 7, 10, 11, 14, 15, 18]) {
+      const count = partners(n)
+      expect(count.size, `${n} players`).toBe((n * (n - 1)) / 2 - 1)
+      expect([...count.values()].every((x) => x === 1)).toBe(true)
+    }
+    expect(build(make(3, 'rotating')).matches).toHaveLength(0)
+  })
+
+  it('ranks by wins, then points scored, then fewest conceded', () => {
+    // 4 players: R1 p1+p4 v p2+p3, R2 and R3 swap the partners
+    let t = make(4, 'rotating')
+    const b = build(t)
+    expect(b.matches).toHaveLength(3)
+    for (const m of b.matches) t = win(t, m.id, 'a', [21, m.round === 1 ? 10 : 19])
+    const done = build(t)
+    expect(done.finished).toBe(true)
+    const rows = pairsTable(t.players, done.matches)
+    expect(rows[0]).toMatchObject({ player: 'p1', won: 3, for: 63, against: 48 })
+    expect(done.champion).toBe('p1')
+    // the three others won once each: more points scored first, and on equal points fewer conceded
+    const rest = rows.slice(1)
+    expect(rest.every((r) => r.won === 1)).toBe(true)
+    for (let i = 1; i < rest.length; i++) {
+      const [x, y] = [rest[i - 1], rest[i]]
+      expect(x.for > y.for || (x.for === y.for && x.against <= y.against)).toBe(true)
+    }
+    // a result entered for other partners is ignored
+    const stale = { ...t, results: { ...t.results, 'RR1-0': { a: 21, b: 0, w: 'a' as const, pa: 'p1+p2', pb: 'p3+p4' } } }
+    expect(build(stale).byId.get('RR1-0')!.status).toBe('ready')
   })
 })

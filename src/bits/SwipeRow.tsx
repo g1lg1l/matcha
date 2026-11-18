@@ -285,9 +285,6 @@ const SwipeRow: React.FC<SwipeRowProps> = ({
       hist: [],
       touch: e.pointerType === 'touch'
     };
-    try {
-      surface.current?.setPointerCapture(e.pointerId);
-    } catch {}
     unwatch.current?.();
     unwatch.current = watchWindow(live);
   };
@@ -300,6 +297,10 @@ const SwipeRow: React.FC<SwipeRowProps> = ({
       if (Math.abs(dx) < HYST || Math.abs(dx) < Math.abs(dy)) return;
       g.grab = s * (g.x0 + Math.sign(dx) * HYST) - inv(exposed.get());
       g.moved = true;
+      // captured only once it is a drag: a pointer captured from the press sends the click to this surface, and a link inside the row never opens
+      try {
+        surface.current?.setPointerCapture(e.pointerId);
+      } catch {}
       root.current?.setAttribute('data-dragging', '');
     }
     const ex = map(s * e.clientX - g.grab);

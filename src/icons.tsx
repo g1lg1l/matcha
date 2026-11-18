@@ -34,6 +34,8 @@ const ui = {
   trash: 'icon-[pixelarticons--trash]',
   save: 'icon-[pixelarticons--save]',
   play: 'icon-[pixelarticons--play]',
+  pause: 'icon-[pixelarticons--pause]',
+  search: 'icon-[pixelarticons--search]',
   list: 'icon-[pixelarticons--list]',
   trophy: 'icon-[pixelarticons--trophy]',
   bracket: 'icon-[pixelarticons--git-branch]',
@@ -121,6 +123,42 @@ const pictures: Record<string, [string, string]> = {
   '💤': ['icon-[pixelarticons--moon-stars]', SKY],
   '🔀': ['icon-[pixelarticons--shuffle]', SKY],
   '📈': ['icon-[pixelarticons--chart-line]', LIME],
+  // more pictures for tournaments, under their Iconify names (see "any pixel icon" below): bundled, so they work offline
+  'pixelarticons:goal': ['icon-[pixelarticons--goal]', WHITE],
+  'pixelarticons:joystick': ['icon-[pixelarticons--joystick]', RED],
+  'pixelarticons:human-run': ['icon-[pixelarticons--human-run]', ORANGE],
+  'pixelarticons:flag': ['icon-[pixelarticons--flag]', RED],
+  'pixelarticons:coins': ['icon-[pixelarticons--coins]', GOLD],
+  'pixelarticons:fish': ['icon-[pixelarticons--fish]', SKY],
+  'pixelarticons:star': ['icon-[pixelarticons--star]', GOLD],
+}
+
+// Any pixel icon: a tournament's picture can be any icon of Iconify's pixel-art sets, kept as "prefix:name".
+// The ones above are bundled; the others are fetched once and remembered on this device, so they show offline too.
+export const PIXEL_SETS = 'pixelarticons,streamline-pixel,memory,pixel'
+const ICONS = 'matcha:icons'
+const isIconName = (e: string) => /^[a-z0-9-]+:[a-z0-9-]+$/.test(e)
+const remote = (name: string) => `https://api.iconify.design/${name.replace(':', '/')}.svg`
+const fetched: Record<string, string> = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(ICONS) ?? '{}')
+  } catch {
+    return {}
+  }
+})()
+const asked = new Set<string>()
+/** Keeps an icon from the network on this device, so that it shows offline. Asked for once per name. */
+export async function rememberIcon(name: string) {
+  if (!isIconName(name) || fetched[name] || pictures[name] || asked.has(name)) return
+  asked.add(name)
+  try {
+    const svg = await (await fetch(remote(name))).text()
+    if (!svg.startsWith('<svg')) return
+    fetched[name] = `data:image/svg+xml,${encodeURIComponent(svg)}`
+    localStorage.setItem(ICONS, JSON.stringify(fetched))
+  } catch {
+    /* offline: it comes from the network the next time it is shown */
+  }
 }
 const medals: Record<string, [number, string]> = { '🥇': [1, GOLD], '🥈': [2, '#cfd6dd'], '🥉': [3, '#e0894a'] }
 
@@ -128,8 +166,8 @@ const key = (e: string) => e.replace(/\uFE0F/g, '')
 /** The icon class and colour for a picture key; unknown ones (an old tournament, say) get the trophy. */
 export const pictureOf = (e: string): [string, string] => pictures[key(e)] ?? pictures['🏆']
 
-/** A picture as an icon, 1em wide so it sizes like text. Decorative unless it gets a label. */
-export function Emoji({ e, className = '', label, style }: { e: string; className?: string; label?: string; style?: CSSProperties }) {
+/** A picture as an icon, 1em wide so it sizes like text. Decorative unless it gets a label. `preview` is for one that is only offered, not chosen: it is not kept on the device. */
+export function Emoji({ e, className = '', label, style, preview }: { e: string; className?: string; label?: string; style?: CSSProperties; preview?: boolean }) {
   const a11y = { role: label ? 'img' : undefined, 'aria-label': label, 'aria-hidden': label ? undefined : true }
   const medal = medals[key(e)]
   if (medal)
@@ -138,6 +176,11 @@ export function Emoji({ e, className = '', label, style }: { e: string; classNam
         <span className="font-display text-[0.6em] leading-none text-black">{medal[0]}</span>
       </span>
     )
+  if (isIconName(e) && !pictures[e]) {
+    if (!preview) void rememberIcon(e)
+    const mask = `url("${fetched[e] ?? remote(e)}") center / 100% 100% no-repeat`
+    return <span {...a11y} className={`inline-block size-[1em] shrink-0 align-[-0.15em] ${className}`} style={{ backgroundColor: LIME, mask, WebkitMask: mask, ...style }} />
+  }
   const [cls, color] = pictureOf(e)
   return <span {...a11y} className={`${cls} inline-block size-[1em] shrink-0 align-[-0.15em] ${className}`} style={{ color, ...style }} />
 }
