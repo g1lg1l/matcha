@@ -3,7 +3,10 @@ import { useSyncExternalStore } from 'react'
 export type Lang = 'it' | 'en'
 
 const en = {
-  tagline: 'Tournaments with friends. Knockout, double elimination or round robin. Make the bracket, share the link, play.',
+  tagline: 'Tournaments and scores with friends.',
+  stepCreate: 'Make a tournament or a scoreboard',
+  stepShare: 'Share the link with your friends',
+  stepPlay: 'Play and keep score',
   yourTournaments: 'Your tournaments',
   newTournament: 'New tournament',
   firstTournament: 'Start your first tournament',
@@ -75,7 +78,7 @@ const en = {
   counterHint: 'Just keep score: a card each, plus and minus. No matches, no bracket.',
   resetScores: 'Reset scores',
   whoStarts: 'Who starts?',
-  whoStartsHint: 'Everyone holds a finger on the screen. Hold still: one gets picked.',
+  whoStartsHint: 'Everyone holds a finger on the screen. Hold still: one gets picked. Up to 5 on iPhone.',
   whoStartsPicked: 'Picked!',
   scoresReset: 'Scores reset',
   scoreSaved: 'Score updated',
@@ -263,7 +266,10 @@ const en = {
 type Dict = typeof en
 
 const it: Dict = {
-  tagline: 'Tornei con gli amici. Eliminazione diretta, doppia eliminazione o girone all’italiana. Crea il tabellone, condividi il link, si gioca.',
+  tagline: 'Tornei e punteggi con gli amici.',
+  stepCreate: 'Crea un torneo o un segnapunti',
+  stepShare: 'Condividi il link con gli amici',
+  stepPlay: 'Gioca e segna i punti',
   yourTournaments: 'I tuoi tornei',
   newTournament: 'Nuovo torneo',
   firstTournament: 'Crea il tuo primo torneo',
@@ -334,7 +340,7 @@ const it: Dict = {
   counterHint: 'Solo i punteggi: una card a testa, più e meno. Niente partite né tabellone.',
   resetScores: 'Azzera punteggi',
   whoStarts: 'Chi inizia?',
-  whoStartsHint: 'Ognuno tiene un dito sullo schermo. Fermi: ne viene scelto uno.',
+  whoStartsHint: 'Ognuno tiene un dito sullo schermo. Fermi: ne viene scelto uno. Fino a 5 su iPhone.',
   whoStartsPicked: 'Scelto!',
   scoresReset: 'Punteggi azzerati',
   scoreSaved: 'Punteggio aggiornato',

@@ -1,8 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { Emoji, Icon } from './icons'
 import { useEffect, useRef, useState } from 'react'
-import LogoLoop from './bits/LogoLoop'
-import PixelCard from './bits/PixelCard'
 import RotatingText from './bits/RotatingText'
 import SwipeRow from './bits/SwipeRow'
 import type { Tournament } from './engine'
@@ -13,7 +11,7 @@ import { removeLocal, saveLocal, useStore, type Role } from './store'
 import { timers } from './timers'
 import { RoleBadge } from './TournamentPage'
 import { field, iconBtn, Logo, outline, pill, Scramble, toast, warn } from './ui'
-import { EMOJIS, formatEmoji, newTournament, summary } from './view'
+import { colorOfIndex, formatEmoji, newTournament, summary } from './view'
 
 type Entry = { key: string; href: string; t: Tournament; online?: Role }
 
@@ -34,17 +32,14 @@ export function Home() {
           <Icon name="settings" size={22} />
         </a>
       </header>
-      <p className="mt-5 max-w-[36ch] text-[17px] leading-relaxed text-mute">{t('tagline')}</p>
       <RotatingText
         key={lang}
         texts={[t('single'), t('double'), t('roundrobin'), t('rotating'), t('party'), t('counter')]}
         rotationInterval={2600}
         staggerDuration={0.02}
-        mainClassName="mt-3 overflow-hidden font-display text-xl text-brand"
+        mainClassName="mt-5 overflow-hidden font-display text-xl text-brand"
         splitLevelClassName="overflow-hidden"
       />
-      {!entries.length && <Toys />}
-
       {/* two ways in: a tournament to set up, or just a scoreboard, open at once with two players to rename */}
       <div className="mt-8 grid grid-cols-2 gap-2">
         <a href="#/new" className={`${pill} ${entries.length ? '' : 'shine'} h-14 text-[15px]`}>
@@ -79,9 +74,11 @@ export function Home() {
           </ul>
         </section>
       )}
+      {!entries.length && <HowItWorks />}
 
       <OpenLink />
       <InstallCard />
+      <p className="mt-12 text-center text-sm text-mute">{t('tagline')}</p>
     </main>
   )
 }
@@ -252,22 +249,24 @@ function InstallCard() {
   )
 }
 
-// Something to look at before the first tournament: every game you could play, drifting past over twinkling pixels
-// (React Bits PixelCard and LogoLoop).
-function Toys() {
+// Before the first tournament: what the app does, in three steps, where the list will be.
+function HowItWorks() {
+  const { t } = useLang()
+  const steps = [
+    ['add', t('stepCreate')],
+    ['share', t('stepShare')],
+    ['trophy', t('stepPlay')],
+  ] as const
   return (
-    <PixelCard trigger="always" colors={['#26300d', '#3d4f12', '#c6f24e']} gap={7} pixelSize={3} speed={40} radius={10} noFocus className="mt-8 h-auto! w-full! bg-none! bg-c-mint! py-7 shadow-none!">
-      <LogoLoop
-        ariaLabel=""
-        logos={EMOJIS.map((e) => ({ node: <Emoji e={e} className="text-[44px]" /> }))}
-        speed={38}
-        logoHeight={44}
-        gap={28}
-        pauseOnHover={false}
-        fadeOut
-        fadeOutColor="#1b240a"
-        width="100%"
-      />
-    </PixelCard>
+    <ol className="stagger mt-10 grid gap-2">
+      {steps.map(([icon, text], i) => (
+        <li key={icon} className="flex items-center gap-3.5 rounded-2xl border-2 border-dashed border-line p-3.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl text-black" style={{ background: colorOfIndex(i + 4) }}>
+            <Icon name={icon} size={22} />
+          </span>
+          <span className="font-display text-[16px]">{text}</span>
+        </li>
+      ))}
+    </ol>
   )
 }
