@@ -1,4 +1,5 @@
 import { AppSettings } from './AppSettings'
+import { Chooser } from './Chooser'
 import { Create } from './Create'
 import { Home } from './Home'
 import { useLang } from './i18n'
@@ -17,6 +18,8 @@ export default function App() {
         <Create />
       ) : route.page === 'settings' ? (
         <AppSettings />
+      ) : route.page === 'pick' ? (
+        <Chooser />
       ) : route.page === 'local' ? (
         <LocalTournament key={route.id} id={route.id} />
       ) : route.page === 'online' ? (

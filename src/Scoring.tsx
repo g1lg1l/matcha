@@ -69,7 +69,7 @@ export function Counter({ value, min, max, onChange, label }: { value: number; m
       <button type="button" aria-label={t('less')} disabled={value <= min} onClick={() => onChange(value - 1)} className={round}>
         <Icon name="minus" size={18} />
       </button>
-      <span className="grid w-9 place-items-center font-display text-xl" aria-live="polite">
+      <span className="grid w-9 place-items-center font-sans font-semibold text-xl" aria-live="polite">
         <Odometer value={value} fontSize="1em" duration={0.45} />
       </span>
       <button type="button" aria-label={t('more')} disabled={value >= max} onClick={() => onChange(value + 1)} className={round}>

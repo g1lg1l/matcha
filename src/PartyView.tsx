@@ -235,7 +235,7 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
                   const n = raw === '' || raw === '-' ? null : Number(raw)
                   setScore((s) => ({ ...s, [id]: n != null && Number.isFinite(n) ? n : null }))
                 }}
-                className="h-11 w-24 shrink-0 rounded-xl bg-raised px-2 text-center font-display text-lg font-bold tabular-nums placeholder:font-sans placeholder:text-xs placeholder:font-medium placeholder:text-mute/70 focus:outline-2 focus:outline-brand"
+                className="h-11 w-24 shrink-0 rounded-xl bg-raised px-2 text-center font-sans text-lg font-bold tabular-nums placeholder:font-sans placeholder:text-xs placeholder:font-medium placeholder:text-mute/70 focus:outline-2 focus:outline-brand"
               />
             </li>
           )

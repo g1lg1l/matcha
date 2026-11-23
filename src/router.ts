@@ -2,25 +2,27 @@
 //   #/            home
 //   #/new         new tournament
 //   #/settings    the app's settings
+//   #/pick        who starts: the finger chooser
 //   #/t/<id>      a tournament kept on this device
 //   #/s/<code>    an online tournament (its share link)
 //   #/s/<code>/<referee>   the same, opened with the referee link
 import { useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 
-export type Route = { page: 'home' } | { page: 'new' } | { page: 'settings' } | { page: 'local'; id: string } | { page: 'online'; code: string; referee?: string }
+export type Route = { page: 'home' } | { page: 'new' } | { page: 'settings' } | { page: 'pick' } | { page: 'local'; id: string } | { page: 'online'; code: string; referee?: string }
 
 export function parse(hash: string): Route {
   const [a, b, c] = hash.replace(/^#\/?/, '').split('/')
   if (a === 'new') return { page: 'new' }
   if (a === 'settings') return { page: 'settings' }
+  if (a === 'pick') return { page: 'pick' }
   if (a === 't' && b) return { page: 'local', id: decodeURIComponent(b) }
   if (a === 's' && b) return { page: 'online', code: decodeURIComponent(b), referee: c ? decodeURIComponent(c) : undefined }
   return { page: 'home' }
 }
 
 export const href = (r: Route) =>
-  r.page === 'home' ? '#/' : r.page === 'new' ? '#/new' : r.page === 'settings' ? '#/settings' : r.page === 'local' ? `#/t/${encodeURIComponent(r.id)}` : `#/s/${encodeURIComponent(r.code)}${r.referee ? `/${encodeURIComponent(r.referee)}` : ''}`
+  r.page === 'home' ? '#/' : r.page === 'new' ? '#/new' : r.page === 'settings' ? '#/settings' : r.page === 'pick' ? '#/pick' : r.page === 'local' ? `#/t/${encodeURIComponent(r.id)}` : `#/s/${encodeURIComponent(r.code)}${r.referee ? `/${encodeURIComponent(r.referee)}` : ''}`
 
 export function go(r: Route, replace = false) {
   if (replace) {
@@ -29,7 +31,8 @@ export function go(r: Route, replace = false) {
   } else location.hash = href(r)
 }
 
-const depth = (hash: string) => (parse(hash).page === 'home' ? 0 : 1)
+// the chooser opens on top of a scoreboard too, so it sits one deeper than the other screens
+const depth = (hash: string) => ({ home: 0, pick: 2 })[parse(hash).page as string] ?? 1
 
 export function useRoute() {
   const hash = useSyncExternalStore(

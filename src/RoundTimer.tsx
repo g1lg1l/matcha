@@ -115,7 +115,7 @@ export function RoundTimer({ id, round, played, plain }: { id: string; round: nu
           onClick={() => setEditing(!editing)}
           aria-expanded={editing}
           aria-label={t('timerSet')}
-          className={`flex flex-1 items-baseline font-display text-[26px] tabular-nums ${left === 0 ? 'blink text-danger' : low ? 'text-danger' : ''}`}
+          className={`flex flex-1 items-baseline font-sans font-semibold text-[26px] tabular-nums ${left === 0 ? 'blink text-danger' : low ? 'text-danger' : ''}`}
         >
           <Counter value={Math.floor(seconds / 60)} minDigits={2} fontSize="1em" duration={0.35} />
           <span className="px-0.5">:</span>
@@ -186,7 +186,7 @@ export function MatchTimer({ id, label }: { id: string; label: string }) {
     <section aria-label={t('matchTimer')} className="mb-4 rounded-2xl bg-raised py-2 pr-2 pl-3.5">
       <div className="flex items-center gap-2">
         <Icon name="clock" size={18} className={touched && low ? 'text-danger' : 'text-mute'} />
-        <span className={`flex flex-1 items-baseline font-display text-2xl tabular-nums ${left === 0 ? 'blink text-danger' : touched && low ? 'text-danger' : ''}`}>
+        <span className={`flex flex-1 items-baseline font-sans font-semibold text-2xl tabular-nums ${left === 0 ? 'blink text-danger' : touched && low ? 'text-danger' : ''}`}>
           <Counter value={Math.floor(seconds / 60)} minDigits={2} fontSize="1em" duration={0.35} />
           <span className="px-0.5">:</span>
           <Counter value={seconds % 60} minDigits={2} fontSize="1em" duration={0.35} />
@@ -224,7 +224,7 @@ export function TimerChip({ id }: { id: string }) {
   const { running, left, touched } = useTimer(id)
   if (!touched) return null
   return (
-    <span className={`pixel pointer-events-none absolute -top-2 right-3 z-[3] inline-flex items-center gap-1 px-1.5 py-0.5 font-display text-xs tabular-nums ${left === 0 ? 'blink bg-danger text-black' : running ? 'bg-primary text-on-primary' : 'bg-line text-ink'}`}>
+    <span className={`pixel pointer-events-none absolute -top-2 right-3 z-[3] inline-flex items-center gap-1 px-1.5 py-0.5 font-sans font-semibold text-xs tabular-nums ${left === 0 ? 'blink bg-danger text-black' : running ? 'bg-primary text-on-primary' : 'bg-line text-ink'}`}>
       <Icon name={running ? 'clock' : 'pause'} size={12} /> {clock(left)}
     </span>
   )

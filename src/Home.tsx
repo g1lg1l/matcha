@@ -60,6 +60,9 @@ export function Home() {
         >
           <Emoji e="📈" className="text-[20px]" /> {t('counter')}
         </button>
+        <a href="#/pick" className={`${outline} col-span-2 h-12 text-[15px]`}>
+          <Emoji e="👆" className="text-[20px]" /> {t('whoStarts')}
+        </a>
       </div>
 
       {entries.length > 0 && (

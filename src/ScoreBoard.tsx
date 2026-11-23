@@ -43,7 +43,10 @@ export function ScoreBoard({ source }: { source: Source }) {
 
   return (
     <>
-      <div className="mt-4 mb-2 flex justify-end">
+      <div className="mt-4 mb-2 flex justify-between">
+        <a href="#/pick" className={`${ghost} twist -ml-3`}>
+          <Icon name="shuffle" size={16} /> {t('whoStarts')}
+        </a>
         <button disabled={!source.canEdit || !anyone} onClick={() => change({}, t('scoresReset'))} className={`${ghost} twist -mr-3 disabled:opacity-40`}>
           <Icon name="restart" size={16} /> {t('resetScores')}
         </button>
@@ -80,7 +83,7 @@ export function ScoreBoard({ source }: { source: Source }) {
                   aria-label={t('score', { name: p.name })}
                   disabled={!source.canEdit}
                   onClick={() => setEditing(p.id)}
-                  className="grid min-w-0 flex-1 place-items-center font-display text-[68px] leading-none tabular-nums transition active:scale-95"
+                  className="grid min-w-0 flex-1 place-items-center font-sans font-semibold text-[68px] leading-none tabular-nums transition active:scale-95"
                 >
                   <Counter value={score} fontSize="1em" duration={0.4} />
                 </button>
@@ -129,7 +132,7 @@ function Keypad({ name, score, onApply, onClose }: { name: string; score: number
     onApply(value)
     closeSheet(done.current)
   }
-  const key = 'pixel grid h-14 place-items-center bg-raised font-display text-2xl transition active:scale-95 active:bg-line'
+  const key = 'pixel grid h-14 place-items-center bg-raised font-sans font-semibold text-2xl transition active:scale-95 active:bg-line'
   const sign = mode === 'add' ? '+' : mode === 'sub' ? '−' : '='
 
   return (
@@ -153,7 +156,7 @@ function Keypad({ name, score, onApply, onClose }: { name: string; score: number
           { value: 'set', label: <span className="font-display text-xl">=</span> },
         ]}
       />
-      <p className="my-4 text-center font-display tabular-nums" aria-live="polite">
+      <p className="my-4 text-center font-sans font-semibold tabular-nums" aria-live="polite">
         <span className="block text-sm text-mute">
           {mode === 'set' ? score : `${score} ${sign} ${n}`}
         </span>
@@ -162,7 +165,7 @@ function Keypad({ name, score, onApply, onClose }: { name: string; score: number
       {mode !== 'set' && (
         <div className="mb-2 grid grid-cols-4 gap-2">
           {[5, 10, 15, 20].map((q) => (
-            <button key={q} onClick={() => apply(after(q))} className="pixel h-11 bg-marker font-display text-on-marker transition active:scale-95">
+            <button key={q} onClick={() => apply(after(q))} className="pixel h-11 bg-marker font-sans font-semibold text-on-marker transition active:scale-95">
               {sign}
               {q}
             </button>

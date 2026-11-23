@@ -159,7 +159,7 @@ function Stepper({ value, onChange, label }: { value: number | null; onChange: (
           onChange(digits === '' ? null : Number(digits))
         }}
         onFocus={(e) => e.target.select()}
-        className="h-11 w-12 rounded-xl bg-raised text-center font-display text-xl font-bold tabular-nums placeholder:text-mute/60 focus:outline-2 focus:outline-brand"
+        className="h-11 w-12 rounded-xl bg-raised text-center font-sans text-xl font-bold tabular-nums placeholder:text-mute/60 focus:outline-2 focus:outline-brand"
       />
       <button aria-label={t('more')} onClick={() => bump((value ?? 0) + 1)} className={round}>
         <Icon name="add" size={16} />

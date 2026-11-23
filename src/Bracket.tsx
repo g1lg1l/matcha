@@ -47,7 +47,7 @@ export function MatchCard({ m, ctx, label, gold }: { m: Match; ctx: Ctx; label?:
         </span>
         {won && m.bracket !== 'RR' && <Icon name={gold ? 'crown' : 'check'} size={16} className={`pop shrink-0 ${gold ? 'text-gold' : 'text-brand'}`} />}
         {score != null && (
-          <span className={`min-w-5 text-right font-display text-base tabular-nums ${won ? '' : 'text-mute'}`}>
+          <span className={`min-w-5 text-right font-sans font-semibold text-base tabular-nums ${won ? '' : 'text-mute'}`}>
             <Count n={score} />
           </span>
         )}
