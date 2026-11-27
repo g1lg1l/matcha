@@ -17,10 +17,10 @@ export const fieldBare = 'w-full rounded-xl border border-line px-3.5 py-2.5 pla
 // 16px, never less: iOS zooms the page when a smaller field takes focus
 export const field = `${fieldBare} bg-raised text-base`
 export const pill =
-  'pixel key inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-display font-semibold disabled:opacity-50 hover:bg-white'
+  'rounded-xl key inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-semibold disabled:opacity-50 hover:bg-white'
 export const btn = `${pill} h-11 px-5`
 export const outline =
-  'pixel key inline-flex h-11 items-center justify-center gap-2 bg-raised px-5 font-display font-semibold hover:bg-line disabled:opacity-50'
+  'rounded-xl key inline-flex h-11 items-center justify-center gap-2 bg-raised px-5 font-semibold hover:bg-line disabled:opacity-50'
 const ghostBare = 'inline-flex items-center gap-1.5 rounded-lg h-9 text-sm font-medium transition active:scale-95'
 export const ghost = `${ghostBare} px-3 text-mute hover:text-ink hover:bg-raised`
 export const danger = `${ghostBare} justify-self-start px-3 -mx-3 text-danger hover:opacity-75`
@@ -56,7 +56,7 @@ export const toast = (message: string, action?: ToastAction) => {
           action.run()
           sileo.dismiss(id)
         }}
-        className="pixel inline-flex h-6 items-center gap-1 bg-brand px-2 font-sans text-xs font-semibold text-on-primary"
+        className="rounded-md inline-flex h-6 items-center gap-1 bg-brand px-2 font-sans text-xs font-semibold text-on-primary"
       >
         <Icon name="undo" size={14} /> {action.label}
       </span>
@@ -259,7 +259,7 @@ export function Toaster() {
   }, [])
   return (
     <div ref={ref} popover="manual" className="toasts">
-      <Sileo position="top-center" theme="dark" offset={{ top: 'max(0.75rem, env(safe-area-inset-top))' }} options={{ fill: '#1d1d1d', roundness: 8, styles: { title: 'text-white! normal-case! font-display', button: 'font-semibold normal-case!' } }} />
+      <Sileo position="top-center" theme="dark" offset={{ top: 'max(0.75rem, env(safe-area-inset-top))' }} options={{ fill: '#1d1d1d', roundness: 8, styles: { title: 'text-white! normal-case!', button: 'font-semibold normal-case!' } }} />
     </div>
   )
 }

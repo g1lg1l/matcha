@@ -55,7 +55,7 @@ export function ScoreBoard({ source }: { source: Source }) {
         {tour.players.map((p, i) => {
           const score = scores[p.id] ?? 0
           return (
-            <li key={p.id} className="pixel overflow-hidden text-white" style={{ background: colorOfIndex(i) }}>
+            <li key={p.id} className="rounded-2xl overflow-hidden text-white" style={{ background: colorOfIndex(i) }}>
               <div className="flex items-center gap-2 bg-black/15 px-4 py-2">
                 {/* the name is its own field: tap it to rename, as in the players list */}
                 <input
@@ -103,7 +103,7 @@ export function ScoreBoard({ source }: { source: Source }) {
             while (taken.has(t('playerN', { n }).toLowerCase())) n++
             source.save({ ...tour, players: [...tour.players, { id: crypto.randomUUID().slice(0, 8), name: t('playerN', { n }) }] })
           }}
-          className="twist mt-2.5 flex h-14 w-full items-center justify-center gap-2 border-2 border-dashed border-line font-display text-mute transition active:scale-[0.98]"
+          className="twist mt-2.5 flex h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line font-semibold text-mute transition active:scale-[0.98]"
         >
           <Icon name="userPlus" size={20} /> {t('addOne')}
         </button>
@@ -132,7 +132,7 @@ function Keypad({ name, score, onApply, onClose }: { name: string; score: number
     onApply(value)
     closeSheet(done.current)
   }
-  const key = 'pixel grid h-14 place-items-center bg-raised font-sans font-semibold text-2xl transition active:scale-95 active:bg-line'
+  const key = 'rounded-xl grid h-14 place-items-center bg-raised font-sans font-semibold text-2xl transition active:scale-95 active:bg-line'
   const sign = mode === 'add' ? '+' : mode === 'sub' ? '−' : '='
 
   return (
@@ -153,7 +153,7 @@ function Keypad({ name, score, onApply, onClose }: { name: string; score: number
         options={[
           { value: 'sub', label: <Icon name="minus" size={22} /> },
           { value: 'add', label: <Icon name="add" size={22} /> },
-          { value: 'set', label: <span className="font-display text-xl">=</span> },
+          { value: 'set', label: <span className="text-xl">=</span> },
         ]}
       />
       <p className="my-4 text-center font-sans font-semibold tabular-nums" aria-live="polite">
@@ -165,7 +165,7 @@ function Keypad({ name, score, onApply, onClose }: { name: string; score: number
       {mode !== 'set' && (
         <div className="mb-2 grid grid-cols-4 gap-2">
           {[5, 10, 15, 20].map((q) => (
-            <button key={q} onClick={() => apply(after(q))} className="pixel h-11 bg-marker font-sans font-semibold text-on-marker transition active:scale-95">
+            <button key={q} onClick={() => apply(after(q))} className="rounded-xl h-11 bg-marker font-sans font-semibold text-on-marker transition active:scale-95">
               {sign}
               {q}
             </button>

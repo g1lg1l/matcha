@@ -108,7 +108,7 @@ export function EmojiPicker({ value, onChange, label, compact }: { value: string
                 setQ('')
               }}
               className={`hoppy grid shrink-0 snap-start place-items-center transition duration-200 active:scale-90 ${size} ${
-                on ? 'bg-c-mint shadow-[inset_0_0_0_2px_var(--brand)]' : `${compact ? 'bg-raised' : 'bg-sheet'} shadow-[inset_0_-2px_0_var(--line)] hover:-translate-y-0.5`
+                on ? 'bg-c-mint shadow-[inset_0_0_0_2px_var(--brand)]' : `${compact ? 'bg-raised' : 'bg-sheet'} hover:-translate-y-0.5`
               }`}
             >
               <span className={`transition-[scale,opacity] duration-200 ${on ? '' : 'opacity-85'}`} style={{ scale: (scale[e] ?? 1) * (on ? 1.12 : 1) }}>

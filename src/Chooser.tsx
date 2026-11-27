@@ -81,8 +81,8 @@ export function Chooser() {
         const color = colorOfIndex(f.color)
         return (
           <div key={id} className="pointer-events-none absolute size-28 -translate-1/2" style={{ left: f.x, top: f.y }}>
-            {!picked && <span className="absolute inset-0 animate-ping motion-reduce:hidden" style={{ background: color }} />}
-            <span className={`pixel relative grid size-full place-items-center text-black transition-transform ${picked ? 'scale-125' : ''}`} style={{ background: picked ? '#fff' : color }}>
+            {!picked && <span className="absolute inset-0 rounded-full animate-ping motion-reduce:hidden" style={{ background: color }} />}
+            <span className={`rounded-full relative grid size-full place-items-center text-black transition-transform ${picked ? 'scale-125' : ''}`} style={{ background: picked ? '#fff' : color }}>
               {picked && <Icon name="crown" size={48} />}
             </span>
           </div>

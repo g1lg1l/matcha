@@ -224,7 +224,7 @@ export function TimerChip({ id }: { id: string }) {
   const { running, left, touched } = useTimer(id)
   if (!touched) return null
   return (
-    <span className={`pixel pointer-events-none absolute -top-2 right-3 z-[3] inline-flex items-center gap-1 px-1.5 py-0.5 font-sans font-semibold text-xs tabular-nums ${left === 0 ? 'blink bg-danger text-black' : running ? 'bg-primary text-on-primary' : 'bg-line text-ink'}`}>
+    <span className={`rounded-md pointer-events-none absolute -top-2 right-3 z-[3] inline-flex items-center gap-1 px-1.5 py-0.5 font-sans font-semibold text-xs tabular-nums ${left === 0 ? 'blink bg-danger text-black' : running ? 'bg-primary text-on-primary' : 'bg-line text-ink'}`}>
       <Icon name={running ? 'clock' : 'pause'} size={12} /> {clock(left)}
     </span>
   )

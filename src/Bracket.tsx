@@ -40,7 +40,7 @@ export function MatchCard({ m, ctx, label, gold }: { m: Match; ctx: Ctx; label?:
     const score = m.result?.[key]
     return (
       <div className={`flex min-h-10 items-center gap-2 px-3 transition-colors duration-500 ${lost ? 'text-mute' : ''} ${won ? (gold ? 'bg-gold/15' : 'bg-brand/10') : ''}`}>
-        {s ? <Avatar {...who(s)} size={22} /> : <span className="size-[22px] shrink-0 pixel border-2 border-dashed border-line" />}
+        {s ? <Avatar {...who(s)} size={22} /> : <span className="size-[22px] shrink-0 rounded-md border-2 border-dashed border-line" />}
         {mate && <span className="-ml-3.5 flex"><Avatar {...who(mate)} size={22} /></span>}
         <span className={`min-w-0 flex-1 truncate text-[15px] ${won ? 'font-bold' : s ? 'font-medium' : 'text-mute italic'}`}>
           {s ? `${who(s).name}${mate ? ` & ${who(mate).name}` : ''}` : s === null ? t('bye') : t('tbd')}
@@ -294,7 +294,7 @@ export function MatchList({ ctx }: { ctx: Ctx }) {
     (ms.length > 0 || empty) && (
       <section>
         <h3 className="mb-2.5 flex items-center gap-1.5 text-sm font-semibold text-mute">
-          <Icon name={icon} size={16} /> {title} {ms.length > 0 && <span className="ml-1 pixel bg-well px-2 py-0.5 text-xs">{ms.length}</span>}
+          <Icon name={icon} size={16} /> {title} {ms.length > 0 && <span className="ml-1 rounded-md bg-well px-2 py-0.5 text-xs">{ms.length}</span>}
         </h3>
         {ms.length ? (
           <div className="stagger grid gap-2 sm:grid-cols-2">
@@ -398,7 +398,7 @@ export function Standings({ ctx }: { ctx: Ctx }) {
           <span className="w-7 text-center text-sm text-mute">•</span>
           <Avatar {...who(p.id)} />
           <span className="flex-1 truncate font-medium">{p.name}</span>
-          <span className="pixel bg-c-mint px-2.5 py-0.5 text-xs font-semibold">{t('inProgress')}</span>
+          <span className="rounded-md bg-c-mint px-2.5 py-0.5 text-xs font-semibold">{t('inProgress')}</span>
         </li>
       ))}
       {out.map((p) => {

@@ -94,7 +94,7 @@ export function PlayersEditor({ players, onChange, locked = false }: { players: 
             enterKeyHint="done"
             className={`${field} min-w-0`}
           />
-          <button aria-label={t('add')} disabled={!draft.trim()} className="key grid size-11 shrink-0 place-items-center pixel bg-primary text-on-primary disabled:opacity-40">
+          <button aria-label={t('add')} disabled={!draft.trim()} className="key grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-on-primary disabled:opacity-40">
             <Icon name="add" size={20} />
           </button>
         </form>

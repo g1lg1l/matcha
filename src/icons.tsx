@@ -172,7 +172,7 @@ export function Emoji({ e, className = '', label, style, preview }: { e: string;
   const medal = medals[key(e)]
   if (medal)
     return (
-      <span {...a11y} className={`pixel inline-grid size-[1em] shrink-0 place-items-center align-[-0.15em] ${className}`} style={{ background: medal[1], ...style }}>
+      <span {...a11y} className={`rounded-full inline-grid size-[1em] shrink-0 place-items-center align-[-0.15em] ${className}`} style={{ background: medal[1], ...style }}>
         <span className="font-display text-[0.6em] leading-none text-black">{medal[0]}</span>
       </span>
     )

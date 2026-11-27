@@ -158,8 +158,8 @@ function Card({ entry }: { entry: Entry }) {
           </span>
         </span>
         {phase === 'live' && (
-          <span className="mt-2 block h-1.5 overflow-hidden rounded-none bg-well" aria-hidden>
-            <span className="block h-full rounded-none bg-brand" style={{ width: `${Math.round((progress.done / Math.max(1, progress.total)) * 100)}%` }} />
+          <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-well" aria-hidden>
+            <span className="block h-full rounded-full bg-brand" style={{ width: `${Math.round((progress.done / Math.max(1, progress.total)) * 100)}%` }} />
           </span>
         )}
       </span>

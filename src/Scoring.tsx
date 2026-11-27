@@ -56,14 +56,14 @@ export function Label({ children, hint }: { children: ReactNode; hint?: string }
 function NumberField({ value, onChange, label, step = 1 }: { value: number; onChange: (n: number) => void; label: string; step?: number }) {
   return (
     <span role="group" aria-label={label} className="block">
-      <ScrubField label="" suffix="" showFill={false} value={value} step={step} min={-999} max={999} onChange={onChange} showDelta={false} showDirty={false} size="lg" accent="#c6f24e" chipColor="#1d1d1d" className="w-full! justify-center px-1! font-display" />
+      <ScrubField label="" suffix="" showFill={false} value={value} step={step} min={-999} max={999} onChange={onChange} showDelta={false} showDirty={false} size="lg" accent="#c6f24e" chipColor="#1d1d1d" className="w-full! justify-center px-1!" />
     </span>
   )
 }
 
 export function Counter({ value, min, max, onChange, label }: { value: number; min: number; max: number; onChange: (n: number) => void; label: string }) {
   const { t } = useLang()
-  const round = 'grid size-10 place-items-center pixel bg-raised text-ink transition active:scale-90 disabled:opacity-30'
+  const round = 'grid size-10 place-items-center rounded-xl bg-raised text-ink transition active:scale-90 disabled:opacity-30'
   return (
     <div className="flex items-center gap-2" role="group" aria-label={label}>
       <button type="button" aria-label={t('less')} disabled={value <= min} onClick={() => onChange(value - 1)} className={round}>

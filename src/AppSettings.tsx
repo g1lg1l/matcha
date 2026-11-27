@@ -3,22 +3,11 @@ import { Capacitor } from '@capacitor/core'
 import { useState } from 'react'
 import { version } from '../package.json'
 import { Icon, type IconName } from './icons'
-import { setLang, useLang } from './i18n'
+import { type Lang, setLang, useLang } from './i18n'
 import { WEB_URL } from './online'
-import { hapticsOn, iconBtn, Logo, Segmented, setHaptics, shareLink, Toggle } from './ui'
+import { field, hapticsOn, iconBtn, Logo, setHaptics, shareLink, Toggle } from './ui'
 
 const REPO = 'https://github.com/g1lg1l/matcha'
-const credits = [
-  ['React Bits', 'https://reactbits.dev'],
-  ['bot-avatars', 'https://libraries.dev'],
-  ['Sileo', 'https://www.npmjs.com/package/sileo'],
-  ['Motion', 'https://motion.dev'],
-  ['Pixelarticons', 'https://github.com/halfmage/pixelarticons'],
-  ['Streamline Pixel', 'https://icon-sets.iconify.design/streamline-pixel/'],
-  ['Pixel Icon Library', 'https://icon-sets.iconify.design/pixel/'],
-  ['Memory Icons', 'https://icon-sets.iconify.design/memory/'],
-  ['Iconify', 'https://iconify.design'],
-] as const
 const row = 'flex min-h-13 w-full items-center gap-3 px-4 text-left font-medium transition-colors active:bg-raised'
 
 export function AppSettings() {
@@ -41,15 +30,13 @@ export function AppSettings() {
         <h2 className={h}>
           <Icon name="globe" size={16} /> {t('language')}
         </h2>
-        <Segmented
-          label={t('language')}
-          value={lang}
-          onChange={setLang}
-          options={[
-            { value: 'it', label: 'Italiano' },
-            { value: 'en', label: 'English' },
-          ]}
-        />
+        <div className="relative">
+          <select aria-label={t('language')} value={lang} onChange={(e) => setLang(e.target.value as Lang)} className={`${field} h-12 appearance-none pr-10 font-medium`}>
+            <option value="it">Italiano</option>
+            <option value="en">English</option>
+          </select>
+          <Icon name="down" size={18} className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-mute" />
+        </div>
       </section>
 
       {canBuzz && (
@@ -80,18 +67,6 @@ export function AppSettings() {
           </div>
         </div>
         <p className="mt-3 text-sm text-mute">{t('aboutText')}</p>
-        <p className="mt-1 text-sm text-mute">
-          {t('credits')}{' '}
-          {credits.map(([name, href], i) => (
-            <span key={name}>
-              {i > 0 && ', '}
-              <a href={href} target="_blank" rel="noreferrer" className="text-ink underline decoration-line underline-offset-4">
-                {name}
-              </a>
-            </span>
-          ))}
-          .
-        </p>
         <ul className="mt-4 divide-y divide-line overflow-hidden rounded-2xl bg-sheet">
           <li>
             <Link icon="github" href={REPO} label={t('sourceCode')} />

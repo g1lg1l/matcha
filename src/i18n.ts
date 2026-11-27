@@ -49,7 +49,6 @@ const en = {
   minutesN: '{n} min',
   holdToConfirm: 'Hold the button to confirm.',
   done: 'Done',
-  credits: 'Built with',
   swipeDelete: 'Delete',
   recentPlayers: 'Played with before',
 
@@ -312,7 +311,6 @@ const it: Dict = {
   minutesN: '{n} min',
   holdToConfirm: 'Tieni premuto il pulsante per confermare.',
   done: 'Fatto',
-  credits: 'Fatto con',
   swipeDelete: 'Elimina',
   recentPlayers: 'Hai già giocato con',
 

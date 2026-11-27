@@ -32,7 +32,7 @@ export function Podium({ t, b }: { t: Tournament; b: Built }) {
           <div key={s.rank} className="pop flex min-w-0 flex-col items-center" style={{ animationDelay: s.delay, animationFillMode: 'backwards' }}>
             <div className="mb-1.5 flex -space-x-2">
               {ps.slice(0, 3).map((p) => (
-                <span key={p.id} className="pixel ring-2 ring-paper">
+                <span key={p.id} className="rounded-md ring-2 ring-paper">
                   <Avatar name={p.name} color={colorOfIndex(p.i)} size={s.rank === 1 ? 44 : 36} />
                 </span>
               ))}

@@ -111,7 +111,7 @@ function TableCard({ table, tid, who, canEdit, onOpen }: { table: Table; /** the
               <Avatar {...p} size={24} />
               <span className={`min-w-0 flex-1 truncate ${place === 1 ? 'font-bold' : 'font-medium'}`}>{p.name}</span>
               {anyScore && r.score[id] != null && <span className="text-sm text-mute tabular-nums">{num(r.score[id]!)}</span>}
-              {r && <span className="min-w-10 pixel bg-raised px-2 py-0.5 text-center text-xs font-bold tabular-nums">+{num(table.points[id] ?? 0)}</span>}
+              {r && <span className="min-w-10 rounded-md bg-raised px-2 py-0.5 text-center text-xs font-bold tabular-nums">+{num(table.points[id] ?? 0)}</span>}
             </li>
           )
         })}
@@ -214,7 +214,7 @@ export function TableSheet({ table, tour, b, onResult, onClose }: { table: Table
           return (
             <li key={id} data-flip={id} className={`flex items-center gap-2 rounded-2xl border-2 p-1.5 transition ${pl === 1 ? 'border-brand bg-c-mint' : pl ? 'border-line' : 'border-dashed border-line'}`}>
               <button onClick={() => tap(id)} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 text-left active:scale-[0.98]" aria-label={p.name}>
-                <span key={pl ?? 0} className={`grid size-10 shrink-0 place-items-center pixel text-lg font-bold tabular-nums ${pl ? 'pop bg-sheet' : 'bg-raised text-mute'}`}>
+                <span key={pl ?? 0} className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg font-bold tabular-nums ${pl ? 'pop bg-sheet' : 'bg-raised text-mute'}`}>
                   {pl ? (medal(pl) ?? `${pl}°`) : '·'}
                 </span>
                 <span className="min-w-0">

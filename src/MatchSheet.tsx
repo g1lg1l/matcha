@@ -137,7 +137,7 @@ export function MatchSheet({ m, tour, b, onResult, onClose }: { m: Match; tour: 
 
 function Stepper({ value, onChange, label }: { value: number | null; onChange: (v: number | null) => void; label: string }) {
   const { t } = useLang()
-  const round = 'grid size-10 place-items-center pixel bg-raised text-mute transition hover:text-ink active:scale-90 disabled:opacity-30'
+  const round = 'grid size-10 place-items-center rounded-xl bg-raised text-mute transition hover:text-ink active:scale-90 disabled:opacity-30'
   const field = useRef<HTMLInputElement>(null)
   const bump = (v: number | null) => {
     onChange(v)

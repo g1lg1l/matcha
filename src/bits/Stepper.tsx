@@ -155,14 +155,14 @@ const RIM_CLASS =
 // ours: no well, the blocks stand on the page
 const TRACK_CLASS = 'relative flex gap-1.5';
 const GLIDER_CLASS =
-  // ours: the app's lime arcade key, above the blocks and under their numbers
-  'pixel pointer-events-none absolute top-0 left-0 z-[1] opacity-0 bg-primary [box-shadow:inset_0_-4px_0_rgb(0_0_0/0.28)]';
-const SEGMENT_CLASS = `pixel relative box-border flex min-w-0 cursor-pointer border-none bg-raised data-[status=complete]:bg-marker data-[status=active]:z-[2] data-[status=active]:bg-transparent font-[inherit] ${MUTED} [transition:background-color_0.2s_ease] disabled:cursor-default [@media(hover:hover)]:[&:not(:disabled):hover]:[background:var(--stepper-hover-fill)] ${FOCUS}`;
-const SEGMENT_ROW = 'h-11 flex-[1_1_auto] items-center justify-center gap-2 px-2.5 pb-1';
+  // ours: the app's lime block, above the blocks and under their numbers
+  'rounded-xl pointer-events-none absolute top-0 left-0 z-[1] opacity-0 bg-primary';
+const SEGMENT_CLASS = `rounded-xl relative box-border flex min-w-0 cursor-pointer border-none bg-raised data-[status=complete]:bg-marker data-[status=active]:z-[2] data-[status=active]:bg-transparent font-[inherit] ${MUTED} [transition:background-color_0.2s_ease] disabled:cursor-default [@media(hover:hover)]:[&:not(:disabled):hover]:[background:var(--stepper-hover-fill)] ${FOCUS}`;
+const SEGMENT_ROW = 'h-11 flex-[1_1_auto] items-center justify-center gap-2 px-2.5';
 const SEGMENT_RAIL = 'h-auto flex-none items-start justify-start gap-2.5 p-2.5';
-const BADGE_CLASS = `relative z-[2] grid h-[22px] w-[22px] flex-none place-items-center font-display text-[17px] leading-none tabular-nums ${MUTED} [transition:color_0.15s_ease] data-[status=active]:text-on-primary data-[status=complete]:text-brand data-[status=complete]:[box-shadow:none]`;
+const BADGE_CLASS = `relative z-[2] grid h-[22px] w-[22px] flex-none place-items-center text-[17px] leading-none tabular-nums ${MUTED} [transition:color_0.15s_ease] data-[status=active]:text-on-primary data-[status=complete]:text-brand data-[status=complete]:[box-shadow:none]`;
 const TITLE_CLASS =
-  'relative z-[2] overflow-hidden font-display text-[14px] leading-[1.2] text-ellipsis whitespace-nowrap transition-colors duration-200 data-[status=active]:text-on-primary! data-[status=complete]:text-on-marker!';
+  'relative z-[2] overflow-hidden text-[14px] leading-[1.2] text-ellipsis whitespace-nowrap transition-colors duration-200 data-[status=active]:text-on-primary! data-[status=complete]:text-on-marker!';
 const DESCRIPTION_CLASS = `overflow-hidden text-[12px] leading-[1.35] text-ellipsis whitespace-nowrap ${MUTED}`;
 const DOT_CLASS = `group/dot grid h-[22px] w-[22px] cursor-pointer place-items-center rounded-full border-none bg-transparent p-0 disabled:cursor-default ${FOCUS}`;
 const DOT_MARK_CLASS =
